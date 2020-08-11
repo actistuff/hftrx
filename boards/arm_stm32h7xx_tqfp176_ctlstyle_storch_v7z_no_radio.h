@@ -37,7 +37,7 @@
 			// normal operation frequency
 			#define REF1_MUL 216		// 2*216.000 MHz (192 <= PLLN <= 432)
 			#define HARDWARE_FLASH_LATENCY FLASH_ACR_LATENCY_7WS
-		#elif CPUSTYLE_STM32H7XX && 0
+		#elif CPUSTYLE_STM32H7XX && 1
 			// high  operation frequency - revision V
 			#define REF1_MUL 480		// 2*480.000 MHz (192 <= PLLN <= 432)
 			#define REF3_MUL 135		// 2*135.000 MHz (192 <= PLLN <= 432)
@@ -48,7 +48,7 @@
 			// normal operation frequency - revision Y
 			#define REF1_MUL 384		// 2*384.000 MHz (192 <= PLLN <= 432)
 			#define REF3_MUL 135		// 2*135.000 MHz (192 <= PLLN <= 432)
-			#define PWR_D3CR_VOS_value (PWR_D3CR_VOS_0 * 3)
+			#define PWR_D3CR_VOS_value (PWR_D3CR_VOS_0 * 2)
 			#define HARDWARE_FLASH_LATENCY FLASH_ACR_LATENCY_2WS
 			#define PLL2_DIVP 4
 		#endif
