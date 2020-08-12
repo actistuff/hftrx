@@ -5100,7 +5100,7 @@ static void sdtick(void)
 }
 #endif
 
-#if LCDMODE_COLORED && ! DSTYLE_G_DUMMY && 0
+#if LCDMODE_COLORED && ! DSTYLE_G_DUMMY && 1
 
 
 
@@ -5150,7 +5150,7 @@ static int local_randomgr( int num )
 
 static void BarTest(void)
 {
-	unsigned n = 20000;
+	unsigned n = 200000;
 	for (;n --;)
 	{                    /* Until user enters a key...   */
 		const int r = local_randomgr(256);
@@ -5165,13 +5165,15 @@ static void BarTest(void)
 		int y2 = local_randomgr(DIM_Y);
 
 		display_solidbar(x, y, x2, y2, color);
-		//local_delay_ms(50);
+		local_delay_ms(50);
 	}
 
 	//getch();             /* Pause for user's response    */
 }
+#endif /* LCDMODE_COLORED && ! DSTYLE_G_DUMMY */
 
 
+#if 0
 
 static  void
 GrideTest(void)
@@ -5234,8 +5236,7 @@ GrideTest(void)
 	//getch();
 
 }
-
-#endif /* LCDMODE_COLORED && ! DSTYLE_G_DUMMY */
+#endif
 
 #if 0
 // MCU_AHB_SRAM - 96k
