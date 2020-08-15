@@ -1,8 +1,0 @@
-*.qws
-db
-output_files
-incremental_db
-greybox_tmp
-*.pof
-*.rpd
-*.sof
