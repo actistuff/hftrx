@@ -1920,6 +1920,18 @@ enum {
 #define MIPI_DCS_PIXEL_FMT_3BIT		1
 
 
+
+struct tc358768_drv_data
+{
+	int dev;
+	unsigned fbd, prd, frs;
+	unsigned bitclk;
+
+	unsigned dsi_lanes;	// 4
+	unsigned pd_lines;	// 24
+	unsigned long refclk;
+};
+
 #define TC358768_I2C_ADDR (0x0E * 2)
 
 unsigned long
@@ -1979,7 +1991,7 @@ tc358768_wr_reg_16bits(unsigned long value)
 	i2c_write(register_id >> 0);		// addres lo
 	i2c_write(value >> 8);		// data hi
 	i2c_write(value >> 0);		// data lo
-	if (v16bit)
+	if (v16bit == 0)
 	{
 		i2c_write(0x00);
 		i2c_write(0x00);
@@ -1987,25 +1999,6 @@ tc358768_wr_reg_16bits(unsigned long value)
 	i2c_waitsend();
     i2c_stop();
 }
-
-
-struct tc358768_drv_data
-{
-	int dev;
-	unsigned fbd, prd, frs;
-	unsigned bitclk;
-
-	unsigned dsi_lanes;	// 4
-	unsigned pd_lines;	// 24
-	unsigned long refclk;
-};
-
-struct tc358768_drv_data dev0 =
-{
-		.refclk = 25000000uL,
-		.pd_lines = 24,
-		.dsi_lanes = 4
-};
 
 static int tc358768_write(
 	struct tc358768_drv_data *ddata,
@@ -2044,21 +2037,22 @@ static int tc358768_write(
 
 static int tc358768_read(
 	struct tc358768_drv_data *ddata,
-	unsigned int reg,
+	unsigned int register_id,
 	unsigned long * val
 	)
 {
 	const unsigned i2caddr = TC358768_I2C_ADDR;
 
-	if (reg < 0x100 || reg >= 0x600)
+	const int v16bit = (register_id < 0x100 || register_id >= 0x600);
+	if (v16bit)
 	{
 		// 16-bit register
 
 		uint8_t v1, v2;
 
 		i2c_start(i2caddr | 0x00);
-		i2c_write(reg >> 8);
-		i2c_write_withrestart(reg >> 0);
+		i2c_write(register_id >> 8);
+		i2c_write_withrestart(register_id >> 0);
 		i2c_start(i2caddr | 0x01);
 		i2c_read(& v1, I2C_READ_ACK_1);	// ||
 		i2c_read(& v2, I2C_READ_NACK);	// ||
@@ -2075,8 +2069,8 @@ static int tc358768_read(
 		uint8_t v1, v2, v3, v4;
 
 		i2c_start(i2caddr | 0x00);
-		i2c_write(reg >> 8);
-		i2c_write_withrestart(reg >> 0);
+		i2c_write(register_id >> 8);
+		i2c_write_withrestart(register_id >> 0);
 		i2c_start(i2caddr | 0x01);
 		i2c_read(& v1, I2C_READ_ACK_1);	// ||
 		i2c_read(& v2, I2C_READ_ACK);	// ||
@@ -2138,10 +2132,18 @@ static void tc358768_sw_reset(struct tc358768_drv_data *ddata)
 	/* Release Reset, Exit Sleep */
 	tc358768_write(ddata, TC358768_SYSCTL, 0);
 }
+//
+//#define REFCLK 25000000uL
+//#define DSI_NDL 4
+//#define DPI_NDL 24
 
-#define REFCLK 25000000uL
-#define DSI_NDL 4
-#define DPI_NDL 24
+
+struct tc358768_drv_data dev0 =
+{
+		.refclk = 25000000uL,
+		.pd_lines = 24,
+		.dsi_lanes = 4
+};
 
 static uint32_t local_min(uint32_t a, uint32_t b) { return a < b ? a : b; }
 static uint32_t local_max(uint32_t a, uint32_t b) { return a > b ? a : b; }
@@ -2274,7 +2276,7 @@ static void tc358768_setup_pll(struct tc358768_drv_data *ddata)
 	frs = ddata->frs;	// Frequency range setting (post divider)
 
 	PRINTF("PLL: refclk %lu, fbd %u, prd %u, frs %u\n",
-		(REFCLK), fbd, prd, frs);
+			ddata->refclk, fbd, prd, frs);
 
 	PRINTF("PLL: %u, BitClk %u, ByteClk %u, pclk %u\n",
 		ddata->bitclk * 2, ddata->bitclk, ddata->bitclk / 4,
@@ -2446,7 +2448,7 @@ int tc358768_command_tx_less8bytes(unsigned char type, const unsigned char *regs
 	tc358768_wr_reg_16bits(0x06000001);   //Packet Transfer
 	//wait until packet is out
 	i = 1000;
-	while(tc358768_rd_reg_16or32bits(TC358768_DSICMD_TX) & 0x01) {
+	while (tc358768_rd_reg_16or32bits(TC358768_DSICMD_TX) & 0x01) {
 		if(i-- == 0)
 			break;
 		tc_print(TC358768_DSICMD_TX);
@@ -2582,8 +2584,8 @@ int _tc358768_rd_lcd_regs(unsigned char type, char comd, int size, unsigned char
 	regs[0] = comd;
 	tc358768_command_tx_less8bytes(type, regs, 1);
 
-	while (!(tc358768_rd_reg_16or32bits(0x0410) & 0x20)){
-		PRINTF("error 0x0410:%04x\n", tc358768_rd_reg_16or32bits(0x0410));
+	while (!(tc358768_rd_reg_16or32bits(TC358768_DSI_STATUS) & 0x20)){
+		PRINTF("error 0x0410:%04x\n", tc358768_rd_reg_16or32bits(TC358768_DSI_STATUS));
 		local_delay_ms(2*1);
 		if(count++ > 10) {
 			break;
@@ -3964,7 +3966,7 @@ void tc358768_initialize(void)
 #endif
 
 	dev0.refclk = hardware_get_dotclock(LTDC_DOTCLK) / 4;
-	dev0.refclk = 25000000uL;
+	//dev0.refclk = 25000000uL;
 	timings0.pixelclock = hardware_get_dotclock(LTDC_DOTCLK);
 
 	tc358768_calc_pll(ddata);
