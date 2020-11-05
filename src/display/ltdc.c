@@ -2149,15 +2149,15 @@ static uint32_t local_min(uint32_t a, uint32_t b) { return a < b ? a : b; }
 static uint32_t local_max(uint32_t a, uint32_t b) { return a > b ? a : b; }
 static uint64_t div_u64(uint64_t a, uint64_t b) { return a / b; }
 
-
-static uint32_t tc358768_pll_to_pclk(struct tc358768_drv_data *priv, uint32_t pll_clk)
-{
-	return (uint32_t)div_u64((uint64_t)pll_clk * priv->dsi_lanes, priv->pd_lines);
-}
+//
+//static uint32_t tc358768_pll_to_pclk(struct tc358768_drv_data *priv, uint32_t pll_clk)
+//{
+//	return (uint32_t)div_u64((uint64_t)pll_clk * priv->dsi_lanes, priv->pd_lines) / 2;
+//}
 
 static uint32_t tc358768_pclk_to_pll(struct tc358768_drv_data *priv, uint32_t pclk)
 {
-	return (uint32_t)div_u64((uint64_t)pclk * priv->pd_lines, priv->dsi_lanes);
+	return (uint32_t)div_u64((uint64_t)pclk * priv->pd_lines, priv->dsi_lanes) * 2;
 }
 
 struct omap_video_timings
@@ -2278,9 +2278,9 @@ static void tc358768_setup_pll(struct tc358768_drv_data *ddata)
 	PRINTF("PLL: refclk %lu, fbd %u, prd %u, frs %u\n",
 			ddata->refclk, fbd, prd, frs);
 
-	PRINTF("PLL: %u, BitClk %u, ByteClk %u, pclk %u\n",
-		ddata->bitclk * 2, ddata->bitclk, ddata->bitclk / 4,
-		tc358768_pll_to_pclk(ddata, ddata->bitclk * 2));
+//	PRINTF("PLL: %u, BitClk %u, ByteClk %u, pclk %u\n",
+//		ddata->bitclk * 2, ddata->bitclk, ddata->bitclk / 4,
+//		tc358768_pll_to_pclk(ddata, ddata->bitclk * 2));
 
 	/* PRD[15:12] FBD[8:0] */
 	tc358768_write(ddata, TC358768_PLLCTL0, (prd << 12) | fbd);
@@ -3966,7 +3966,7 @@ void tc358768_initialize(void)
 #endif
 
 	dev0.refclk = hardware_get_dotclock(LTDC_DOTCLK) / 4;
-	//dev0.refclk = 25000000uL;
+	dev0.refclk = 25000000uL;
 	timings0.pixelclock = hardware_get_dotclock(LTDC_DOTCLK);
 
 	tc358768_calc_pll(ddata);
