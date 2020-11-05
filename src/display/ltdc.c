@@ -2351,8 +2351,12 @@ static void tc358768_power_on(struct tc358768_drv_data *ddata)
 	tc358768_write(ddata, TC358768_DSI_VACT, t->y_res);
 
 	/* (hsw + hbp) * byteclk * ndl / pclk */
+//	tc358768_write(ddata, TC358768_DSI_HSW,
+//			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 4) * ddata->dsi_lanes, t->pixelclock));
+//	tc358768_write(ddata, TC358768_DSI_HSW,
+//			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 8) * ddata->dsi_lanes, t->pixelclock));
 	tc358768_write(ddata, TC358768_DSI_HSW,
-		(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 4) * ddata->dsi_lanes, t->pixelclock));
+			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 16) * ddata->dsi_lanes, t->pixelclock));
 
 	/* hbp (not used in event mode) */
 	tc358768_write(ddata, TC358768_DSI_HBPR, 0);
@@ -2370,7 +2374,7 @@ static void tc358768_power_on(struct tc358768_drv_data *ddata)
 	tc358768_write(ddata, TC358768_DSI_CONFW, (6<<29) | (0x3 << 24) | 0x8000);
 
 	/* clear FrmStop and RstPtr */
-	tc358768_update_bits(ddata, TC358768_PP_MISC, 0x3 << 14, 0);
+	tc358768_update_bits(ddata, TC358768_PP_MISC, 0x3 << 14, 0);	// FrmStop=0, RstPtr=0
 
 	/* set PP_en */
 	tc358768_update_bits(ddata, TC358768_CONFCTL, 1 << 6, 1 << 6);
@@ -3890,17 +3894,17 @@ void tc358768_initialize(void)
 	tc358768_power_off(ddata);
 
 	tc358768_power_on(ddata);
-
-	PRINTF("TC358778XBG: Data Format Control Register=%08lX\n", tc358768_rd_reg_16or32bits(TC358768_DATAFMT));
-
-	PRINTF("TC358778XBG: Chip and Revision ID=%04lX\n", tc358768_rd_reg_16or32bits(TC358768_CHIPID));
-
-	PRINTF("TC358778XBG: TC358768_DSI_VSW=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_VSW));
-	PRINTF("TC358778XBG: TC358768_DSI_VBPR=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_VBPR));
-	PRINTF("TC358778XBG: TC358768_DSI_VACT=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_VACT));
-	PRINTF("TC358778XBG: TC358768_DSI_HSW=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_HSW));
-	PRINTF("TC358778XBG: TC358768_DSI_HBPR=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_HBPR));
-	PRINTF("TC358778XBG: TC358768_DSI_HACT=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_HACT));
+//
+//	PRINTF("TC358778XBG: Data Format Control Register=%08lX\n", tc358768_rd_reg_16or32bits(TC358768_DATAFMT));
+//
+//	PRINTF("TC358778XBG: Chip and Revision ID=%04lX\n", tc358768_rd_reg_16or32bits(TC358768_CHIPID));
+//
+//	PRINTF("TC358778XBG: TC358768_DSI_VSW=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_VSW));
+//	PRINTF("TC358778XBG: TC358768_DSI_VBPR=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_VBPR));
+//	PRINTF("TC358778XBG: TC358768_DSI_VACT=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_VACT));
+//	PRINTF("TC358778XBG: TC358768_DSI_HSW=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_HSW));
+//	PRINTF("TC358778XBG: TC358768_DSI_HBPR=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_HBPR));
+//	PRINTF("TC358778XBG: TC358768_DSI_HACT=%ld\n", tc358768_rd_reg_16or32bits(TC358768_DSI_HACT));
 
 }
 /*

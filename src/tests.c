@@ -5168,7 +5168,7 @@ static void display_solidbar(
 }
 
 
-// Получение псевдослучайныз чисел.
+// Получение псевдослучайных чисел.
 // 0 .. num-1
 static int local_randomgr(unsigned long num)
 {
@@ -5195,7 +5195,7 @@ static void BarTest(void)
 	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
 	board_update();
 	int forever = 0;
-	unsigned n = 2000;
+	unsigned n = 500;
 	for (;forever || n --;)
 	{                    /* Until user enters a key...   */
 		const int r = local_randomgr(256);
@@ -5211,7 +5211,7 @@ static void BarTest(void)
 
 		display_solidbar(x, y, x2, y2, color);
 		display_flush();
-		local_delay_ms(5);
+		local_delay_ms(50);
 	}
 
 	//getch();             /* Pause for user's response    */
