@@ -88,7 +88,7 @@
 		//#define PLL1DIVN	62	// x25..x100: 12.8 * 62 = 793.6 MHz
 		//#define PLL1DIVN	(stm32mp1_overdrived() ? 62 : 50)	// Auto select
 
-#if 1
+#if 0
 		// PLL2_1600
 		#define PLL2DIVM	5	// ref2_ck = 12.8 MHz
 		#define PLL2DIVN	41	// 12.8 * 41 = 524.8 MHz
@@ -98,10 +98,10 @@
 #else
 		// PLL2_1600
 		#define PLL2DIVM	5	// ref2_ck = 12.8 MHz
-		#define PLL2DIVN	61//41	// 12.8 * 41 = 524.8 MHz
+		#define PLL2DIVN	46//41	// 12.8 * 46 = 588.8 MHz
 		#define PLL2DIVP	3//2	// div2=minimum PLL2 selected as AXI sub-system clock (pll2_p_ck)
 		#define PLL2DIVQ	2//1	// GPU clock divider
-		#define PLL2DIVR	3//1	// DDR clock divider
+		#define PLL2DIVR	2//1	// DDR clock divider
 #endif
 
 		// PLL3_800
