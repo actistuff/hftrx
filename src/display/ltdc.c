@@ -2297,6 +2297,42 @@ static void tc358768_setup_pll(struct tc358768_drv_data *ddata)
 		(frs << 10) | (0x2 << 8) | (1 << 4) | (1 << 1) | (1 << 0));
 }
 
+unsigned getw2(void)
+{
+	unsigned long val;
+	tc358768_read(NULL, TC358768_DSI_HSW, & val);
+
+	return val;
+}
+
+unsigned setw(unsigned w)
+{
+	unsigned long val;
+
+	tc358768_write(NULL, TC358768_DSI_HSW, w);
+	tc358768_read(NULL, TC358768_DSI_HSW, & val);
+
+	return val;
+}
+
+unsigned getq2(void)
+{
+	unsigned long val;
+	tc358768_read(NULL, TC358768_DSI_HACT, & val);
+
+	return val;
+}
+
+unsigned setq(unsigned q)
+{
+	unsigned long val;
+
+	tc358768_write(NULL, TC358768_DSI_HACT, q);
+	tc358768_read(NULL, TC358768_DSI_HACT, & val);
+
+	return val;
+}
+
 static void tc358768_power_on(struct tc358768_drv_data *ddata)
 {
 	const struct omap_video_timings *t = & timings0;
@@ -2357,6 +2393,8 @@ static void tc358768_power_on(struct tc358768_drv_data *ddata)
 			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 8) * ddata->dsi_lanes, t->pixelclock));
 //	tc358768_write(ddata, TC358768_DSI_HSW,
 //			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 16) * ddata->dsi_lanes, t->pixelclock));
+
+//	tc358768_write(ddata, TC358768_DSI_HSW, (t->hsw + t->hbp) * 3);
 
 	/* hbp (not used in event mode) */
 	tc358768_write(ddata, TC358768_DSI_HBPR, 0);

@@ -5187,15 +5187,21 @@ static int local_randomgr(unsigned long num)
 /*                                                                      */
 /*      RANDOMBARS: Display random bars                                 */
 /*                                                                      */
+unsigned setw(unsigned w);
+unsigned setq(unsigned q);
+unsigned getw2(void);
+unsigned getq2(void);
 
 static void BarTest(void)
 {
 	//PRINTF("BarTest\n");
-
+	unsigned w = getw2();
+	unsigned q = getq2();
 	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
 	board_update();
-	int forever = 0;
+	int forever = 1;
 	unsigned n = 500;
+	PRINTF("W=%u, Q=%u\n", setw(w), setq(q));
 	for (;forever || n --;)
 	{                    /* Until user enters a key...   */
 		const int r = local_randomgr(256);
@@ -5210,8 +5216,55 @@ static void BarTest(void)
 		int y2 = local_randomgr(DIM_Y);
 
 		display_solidbar(x, y, x2, y2, color);
+//		char s [32];
+//		local_snprintf_P(s, 32, "test W=%u", w);
+//		display_at(0, 0, s);
+//		display_at(200, 200, s);
+
 		display_flush();
 		local_delay_ms(50);
+		char c;
+		if (dbg_getchar(& c))
+		{
+			switch (c)
+			{
+			case '6':
+				w = w + 1;
+				PRINTF("W=%u\n", setw(w));
+				break;
+			case '7':
+				w = w + 100;
+				PRINTF("W=%u\n", setw(w));
+				break;
+			case '5':
+				if (w > 1)
+				{
+					w = w - 1;
+					PRINTF("W=%u\n", setw(w));
+				}
+				break;
+			case '4':
+				if (w > 100)
+				{
+					w = w - 100;
+					PRINTF("W=%u\n", setw(w));
+				}
+				break;
+
+			case '1':
+				if (q > 1)
+				{
+					q = q - 1;
+					PRINTF("Q=%u\n", setq(q));
+				}
+				break;
+			case '2':
+				q = q + 1;
+				PRINTF("Q=%u\n", setq(q));
+				break;
+			}
+		}
+
 	}
 
 	//getch();             /* Pause for user's response    */
@@ -6351,7 +6404,7 @@ void hightests(void)
 		}
 	}
 #endif
-#if 0 && LCDMODE_COLORED && ! DSTYLE_G_DUMMY
+#if 1 && LCDMODE_COLORED && ! DSTYLE_G_DUMMY
 	{
 		unsigned cnt;
 		display2_bgreset();
