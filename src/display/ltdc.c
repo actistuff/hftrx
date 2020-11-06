@@ -2353,10 +2353,10 @@ static void tc358768_power_on(struct tc358768_drv_data *ddata)
 	/* (hsw + hbp) * byteclk * ndl / pclk */
 //	tc358768_write(ddata, TC358768_DSI_HSW,
 //			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 4) * ddata->dsi_lanes, t->pixelclock));
-//	tc358768_write(ddata, TC358768_DSI_HSW,
-//			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 8) * ddata->dsi_lanes, t->pixelclock));
 	tc358768_write(ddata, TC358768_DSI_HSW,
-			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 16) * ddata->dsi_lanes, t->pixelclock));
+			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 8) * ddata->dsi_lanes, t->pixelclock));
+//	tc358768_write(ddata, TC358768_DSI_HSW,
+//			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 16) * ddata->dsi_lanes, t->pixelclock));
 
 	/* hbp (not used in event mode) */
 	tc358768_write(ddata, TC358768_DSI_HBPR, 0);
@@ -3886,7 +3886,7 @@ void tc358768_initialize(void)
 #endif
 
 	dev0.refclk = hardware_get_dotclock(LTDC_DOTCLK) / 4;
-	dev0.refclk = 25000000uL;
+	//dev0.refclk = 25000000uL;
 	timings0.pixelclock = hardware_get_dotclock(LTDC_DOTCLK);
 
 	tc358768_calc_pll(ddata);
