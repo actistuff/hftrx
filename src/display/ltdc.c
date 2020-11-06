@@ -2396,10 +2396,13 @@ static void tc358768_power_on(struct tc358768_drv_data *ddata)
 
 //	tc358768_write(ddata, TC358768_DSI_HSW, (t->hsw + t->hbp) * 3);
 
+	tc358768_write(ddata, TC358768_DSI_HSW, 900);
+
 	/* hbp (not used in event mode) */
 	tc358768_write(ddata, TC358768_DSI_HBPR, 0);
 	/* hact (bytes) */
-	tc358768_write(ddata, TC358768_DSI_HACT, t->x_res * 3);
+	//tc358768_write(ddata, TC358768_DSI_HACT, t->x_res * 3);
+	tc358768_write(ddata, TC358768_DSI_HACT, 3000);
 
 	/* Start DSI Tx */
 	tc358768_write(ddata, TC358768_DSI_START, 0x1);
