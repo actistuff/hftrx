@@ -2141,7 +2141,7 @@ static void tc358768_sw_reset(struct tc358768_drv_data *ddata)
 struct tc358768_drv_data dev0 =
 {
 		.refclk = 25000000uL,
-		.pd_lines = 24,
+		.pd_lines = 16, //24,
 		.dsi_lanes = 4
 };
 
@@ -2297,42 +2297,6 @@ static void tc358768_setup_pll(struct tc358768_drv_data *ddata)
 		(frs << 10) | (0x2 << 8) | (1 << 4) | (1 << 1) | (1 << 0));
 }
 
-unsigned getw2(void)
-{
-	unsigned long val;
-	tc358768_read(NULL, TC358768_DSI_HSW, & val);
-
-	return val;
-}
-
-unsigned setw(unsigned w)
-{
-	unsigned long val;
-
-	tc358768_write(NULL, TC358768_DSI_HSW, w);
-	tc358768_read(NULL, TC358768_DSI_HSW, & val);
-
-	return val;
-}
-
-unsigned getq2(void)
-{
-	unsigned long val;
-	tc358768_read(NULL, TC358768_DSI_HACT, & val);
-
-	return val;
-}
-
-unsigned setq(unsigned q)
-{
-	unsigned long val;
-
-	tc358768_write(NULL, TC358768_DSI_HACT, q);
-	tc358768_read(NULL, TC358768_DSI_HACT, & val);
-
-	return val;
-}
-
 static void tc358768_power_on(struct tc358768_drv_data *ddata)
 {
 	const struct omap_video_timings *t = & timings0;
@@ -2346,7 +2310,8 @@ static void tc358768_power_on(struct tc358768_drv_data *ddata)
 	/* PDFormat[7:4] spmode_en[3] rdswap_en[2] dsitx_en[1] txdt_en[0] */
 	tc358768_write(ddata, TC358768_DATAFMT, (0x3 << 4) | (1 << 2) | (1 << 1) | (1 << 0));
 	/* dsitx_dt[7:0] 3e = Packed Pixel Stream, 24-bit RGB, 8-8-8 Format*/
-	tc358768_write(ddata, TC358768_DSITX_DT, 0x003e);
+	tc358768_write(ddata, TC358768_DSITX_DT, MIPI_DSI_PACKED_PIXEL_STREAM_24);
+	//tc358768_write(ddata, TC358768_DSITX_DT, MIPI_DSI_PACKED_PIXEL_STREAM_16);
 
 	/* Enable D-PHY (HiZ->LP11) */
 	tc358768_write(ddata, TC358768_CLW_CNTRL, 0x0000);
@@ -2389,20 +2354,20 @@ static void tc358768_power_on(struct tc358768_drv_data *ddata)
 	/* (hsw + hbp) * byteclk * ndl / pclk */
 //	tc358768_write(ddata, TC358768_DSI_HSW,
 //			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 4) * ddata->dsi_lanes, t->pixelclock));
-	tc358768_write(ddata, TC358768_DSI_HSW,
-			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 8) * ddata->dsi_lanes, t->pixelclock));
+//	tc358768_write(ddata, TC358768_DSI_HSW,
+//			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 8) * ddata->dsi_lanes, t->pixelclock));
 //	tc358768_write(ddata, TC358768_DSI_HSW,
 //			(uint32_t) div_u64((t->hsw + t->hbp) * ((uint64_t) ddata->bitclk / 16) * ddata->dsi_lanes, t->pixelclock));
 
 //	tc358768_write(ddata, TC358768_DSI_HSW, (t->hsw + t->hbp) * 3);
 
-	tc358768_write(ddata, TC358768_DSI_HSW, 900);
+	tc358768_write(ddata, TC358768_DSI_HSW, 600);
 
 	/* hbp (not used in event mode) */
 	tc358768_write(ddata, TC358768_DSI_HBPR, 0);
 	/* hact (bytes) */
-	//tc358768_write(ddata, TC358768_DSI_HACT, t->x_res * 3);
-	tc358768_write(ddata, TC358768_DSI_HACT, 3000);
+	tc358768_write(ddata, TC358768_DSI_HACT, t->x_res * 3);	/* зависит от того, какой входной формат */
+	////tc358768_write(ddata, TC358768_DSI_HACT, 3000);
 
 	/* Start DSI Tx */
 	tc358768_write(ddata, TC358768_DSI_START, 0x1);
@@ -2435,6 +2400,54 @@ static void tc358768_power_off(struct tc358768_drv_data *ddata)
 	/* set RstPtr */
 	tc358768_update_bits(ddata, TC358768_PP_MISC, 1 << 14, 1 << 14);
 }
+//
+//unsigned getw2(void)
+//{
+//	struct tc358768_drv_data * ddata = & dev0;
+//	unsigned long val;
+//	tc358768_read(ddata, TC358768_DSI_HSW, & val);
+//
+//	return val;
+//}
+//
+//unsigned setw(unsigned w)
+//{
+//	struct tc358768_drv_data * ddata = & dev0;
+//	unsigned long val;
+//
+//	tc358768_power_off(ddata);
+//	tc358768_write(ddata, TC358768_DSI_HSW, w);
+//	tc358768_read(ddata, TC358768_DSI_HSW, & val);
+//	local_delay_ms(20);
+//	tc358768_power_on(ddata);
+//
+//	return val;
+//}
+//
+//unsigned getq2(void)
+//{
+//	struct tc358768_drv_data * ddata = & dev0;
+//	unsigned long val;
+//	tc358768_read(ddata, TC358768_DSI_HACT, & val);
+//
+//	return val;
+//}
+//
+//unsigned setq(unsigned q)
+//{
+//	struct tc358768_drv_data * ddata = & dev0;
+//	unsigned long val;
+//
+//	//tc358768_power_off(ddata);
+//	//tc358768_write(ddata, TC358768_DSI_HACT, q);
+//	tc358768_read(ddata, TC358768_DSI_HACT, & val);
+//	//local_delay_ms(20);
+//	//tc358768_power_on(ddata);
+//
+//	return val;
+//}
+
+//////////////////////////////////
 
 void tc_print(uint32_t addr) {
 	//PRINTF("+++++++++++addr->%04x: %04x\n", addr, tc358768_rd_reg_16or32bits(addr));
@@ -3933,6 +3946,9 @@ void tc358768_initialize(void)
 	tc358768_calc_pll(ddata);
 
 	tc358768_power_off(ddata);
+
+//	unsigned w = setw(900);
+//	unsigned q = setq(3000);
 
 	tc358768_power_on(ddata);
 //

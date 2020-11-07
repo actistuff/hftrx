@@ -5189,19 +5189,34 @@ static int local_randomgr(unsigned long num)
 /*                                                                      */
 unsigned setw(unsigned w);
 unsigned setq(unsigned q);
-unsigned getw2(void);
-unsigned getq2(void);
+//unsigned getw2(void);
+//unsigned getq2(void);
+static void AlignTest(void)
+{
+	enum { W = 100, H = 100 };
+	display_fillrect(0, 0, W, H, COLORMAIN_RED);
+	display_fillrect(DIM_X - W, 0, W, H, COLORMAIN_RED);
+	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_RED);
+	display_fillrect(DIM_X - W, DIM_Y - H, W, H, COLORMAIN_RED);
+}
 
 static void BarTest(void)
 {
 	//PRINTF("BarTest\n");
-	unsigned w = getw2();
-	unsigned q = getq2();
+//	unsigned w = setw(47);
+//	unsigned q = setq(720 * 3);
 	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
 	board_update();
+
+//	enum { W = 100, H = 100 };
+//	display_fillrect(0, 0, W, H, COLORMAIN_RED);
+//	display_fillrect(DIM_X - W, 0, W, H, COLORMAIN_GREEN);
+//	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_BLUE);
+//	display_fillrect(DIM_X - W, DIM_Y - H, W, H, COLORMAIN_WHITE);
+
 	int forever = 1;
 	unsigned n = 500;
-	PRINTF("W=%u, Q=%u\n", setw(w), setq(q));
+//	PRINTF("W=%u, Q=%u\n", setw(w), setq(q));
 	for (;forever || n --;)
 	{                    /* Until user enters a key...   */
 		const int r = local_randomgr(256);
@@ -5209,61 +5224,62 @@ static void BarTest(void)
 		const int b = local_randomgr(256);
 
 		const COLORMAIN_T color = TFTRGB(r, g, b);
-
 		int x = local_randomgr(DIM_X);
 		int y = local_randomgr(DIM_Y);
 		int x2 = local_randomgr(DIM_X);
 		int y2 = local_randomgr(DIM_Y);
 
 		display_solidbar(x, y, x2, y2, color);
-//		char s [32];
-//		local_snprintf_P(s, 32, "test W=%u", w);
-//		display_at(0, 0, s);
-//		display_at(200, 200, s);
+
+//		char s [128];
+//		local_snprintf_P(s, ARRAY_SIZE(s), "test W=%u,  Q=%u          ", w, q);
+//		colmain_setcolors(COLORMAIN_WHITE, COLORMAIN_BLACK);
+//		display_at(0, 5, s);
 
 		display_flush();
-		local_delay_ms(50);
-		char c;
-		if (dbg_getchar(& c))
-		{
-			switch (c)
-			{
-			case '6':
-				w = w + 1;
-				PRINTF("W=%u\n", setw(w));
-				break;
-			case '7':
-				w = w + 100;
-				PRINTF("W=%u\n", setw(w));
-				break;
-			case '5':
-				if (w > 1)
-				{
-					w = w - 1;
-					PRINTF("W=%u\n", setw(w));
-				}
-				break;
-			case '4':
-				if (w > 100)
-				{
-					w = w - 100;
-					PRINTF("W=%u\n", setw(w));
-				}
-				break;
-
-			case '1':
-				if (q > 1)
-				{
-					q = q - 1;
-					PRINTF("Q=%u\n", setq(q));
-				}
-				break;
-			case '2':
-				q = q + 1;
-				PRINTF("Q=%u\n", setq(q));
-				break;
-			}
-		}
+		//local_delay_ms(50);
+//
+//		char c;
+//		if (dbg_getchar(& c))
+//		{
+//			switch (c)
+//			{
+//			case '6':
+//				w = w + 1;
+//				PRINTF("W=%u\n", setw(w));
+//				break;
+//			case '7':
+//				w = w + 100;
+//				PRINTF("W=%u\n", setw(w));
+//				break;
+//			case '5':
+//				if (w > 1)
+//				{
+//					w = w - 1;
+//					PRINTF("W=%u\n", setw(w));
+//				}
+//				break;
+//			case '4':
+//				if (w > 100)
+//				{
+//					w = w - 100;
+//					PRINTF("W=%u\n", setw(w));
+//				}
+//				break;
+//
+//			case '1':
+//				if (q > 1)
+//				{
+//					q = q - 1;
+//					PRINTF("Q=%u\n", setq(q));
+//				}
+//				break;
+//			case '2':
+//				q = q + 1;
+//				PRINTF("Q=%u\n", setq(q));
+//				break;
+//			}
+//		}
 
 	}
 
