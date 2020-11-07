@@ -2760,7 +2760,10 @@ void tscprint(void)
 			(((unsigned long) v4) << 0) |
 			0;
 
-	PRINTF("tsc=%08lX %08lX ", vz1, vz2);
+	if (vz1 == 0 && vz2 == 0)
+		return;
+
+	PRINTF("tsc=%08lX %08lX\n", vz1, vz2);
 }
 
 
@@ -4051,13 +4054,6 @@ static uint8_t bigon [] =
 
 void panel_initialize(void)
 {
-	tscinit();
-	tscid();
-	for (;0;)
-	{
-		tscprint();
-	}
-
 	// RM69052 chip
 	// also:
 	// https://github.com/1667450061/bak/blob/d5c37db8a9254783755b7bfb6823f32474febff8/arch/arm/plat-lc/drivers/video/comipfb2/oled_auo_rm69052.c
@@ -4076,7 +4072,6 @@ void panel_initialize(void)
 	TP();
 	local_delay_ms(200);
 
-#if 1
 	const uint8_t * pv = bigon;
 	for (;;)
 	{
@@ -4088,7 +4083,6 @@ void panel_initialize(void)
 		pv += maxv + 2;
 		//PRINTF("e\n");
 	}
-#endif
 
 	TP();
 	mipi_dsi_send_dcs_packet(sleepout, ARRAY_SIZE(sleepout));
@@ -4099,6 +4093,13 @@ void panel_initialize(void)
 	local_delay_ms(200);
 
 	PRINTF("display on\n");
+
+	tscinit();
+	tscid();
+	for (;1;)
+	{
+		tscprint();
+	}
 
 }
 
