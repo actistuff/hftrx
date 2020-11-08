@@ -5386,7 +5386,7 @@ static void hebutton(
 	uint_fast16_t h = GRID2Y(hcell);
 
 	const COLORMAIN_T fg = COLORMAIN_BLACK;
-	const COLORMAIN_T bg = state ? COLORMAIN_DARKGREEN : COLORMAIN_GREEN;
+	const COLORMAIN_T bg = state ? COLORMAIN_WHITE : COLORMAIN_GRAY;
 	display_fillrect(x, y, w, h, bg);
 
 	colmain_setcolors(fg, bg);
@@ -5429,11 +5429,11 @@ restart:
 //	display_at(0, 12 * 10, s12);
 //
 
-	hebutton(0, 90, 30, 6, s8, 0);
-	hebutton(0, 100, 30, 6, s9, 0);
-	hebutton(0, 110, 30, 6, s10, 0);
-	hebutton(0, 120, 30, 6, s11, 0);
-	hebutton(0, 130, 30, 6, s12, 0);
+	hebutton(0, 90, 30, 5, s8, 0);
+	hebutton(0, 100, 30, 5, s9, 0);
+	hebutton(0, 110, 30, 5, s10, 0);
+	hebutton(0, 120, 30, 5, s11, 0);
+	hebutton(0, 130, 30, 5, s12, 0);
 
 //	for (unsigned y = 0; y < 4; ++ y)
 //	{
@@ -5461,7 +5461,7 @@ restart:
 		if (s3402_get_coord(& x, & y))
 		{
 			PRINTF("tsc: x=%u y=%u\n", x, y);
-			if (insidebutton(0, 110, 30, 6, x, y))
+			if (insidebutton(0, 110, 30, 5, x, y))
 			{
 //				// актиыная кнопка
 //				hebutton(0, 110, 30, 6, s10, 1);
