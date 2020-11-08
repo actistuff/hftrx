@@ -5381,6 +5381,8 @@ void cat7_sendchar(void * ctx)							/* вызывается из обработ
 
 }
 
+static int tscok;
+
 static int insidebutton(
 	uint_fast8_t xcell,
 	uint_fast8_t ycell,
@@ -5395,7 +5397,8 @@ static int insidebutton(
 	uint_fast16_t w = GRID2X(wcell);
 	uint_fast16_t h = GRID2Y(hcell);
 
-
+	if (tscok == 0)
+		return 0;
 	return x <= xp &&
 			(x + w) > xp &&
 			y <= yp &&
@@ -5420,7 +5423,7 @@ static void hebutton(
 	uint_fast16_t h = GRID2Y(hcell);
 
 	const COLORMAIN_T fg = COLORMAIN_BLACK;
-	const COLORMAIN_T bg = state ? COLORMAIN_WHITE : COLORMAIN_GRAY;
+	const COLORMAIN_T bg = state ? COLORMAIN_WHITE : (tscok ? COLORMAIN_GRAY : COLORMAIN_DARKRED);
 	display_fillrect(x, y, w, h, bg);
 
 	colmain_setcolors(fg, bg);
@@ -5433,6 +5436,7 @@ static void hebutton(
 
 static void AlignTest(void)
 {
+	tscok = s3402_get_id() == 0x01;
 //	enum { RADJ = 16 };
 //	enum { W = 100, H = 100 };
 
@@ -5496,7 +5500,7 @@ restart:
 		static int pos = 0;
 		char c;
 		unsigned x, y;
-		if (s3402_get_coord(& x, & y))
+		if (tscok && s3402_get_coord(& x, & y))
 		{
 			//PRINTF("tsc: x=%u y=%u\n", x, y);
 			if (insidebutton(0, 74, 25, 8, x, y))

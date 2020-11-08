@@ -2713,7 +2713,7 @@ void s3402_init(void)
     i2c_stop();
 }
 
-void s3402_get_id(void)
+int s3402_get_id(void)
 {
 	const unsigned i2caddr = TSC_I2C_ADDR;
 
@@ -2725,6 +2725,8 @@ void s3402_get_id(void)
 	i2c_read(& v0, I2C_READ_ACK_NACK);	// ||	The Manufacturer ID register always returns data $01.
 
 	PRINTF("tsc id=%08lX (expected 0x01)\n", v0);
+
+	return v0;
 }
 
 void tscprint(void)

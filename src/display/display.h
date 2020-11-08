@@ -678,6 +678,7 @@ void display_x2_at(uint_fast8_t x, uint_fast8_t y, const char * s);		// Выда
 void display_at_P(uint_fast8_t x, uint_fast8_t y, const FLASHMEM char * s); // Выдача строки из ПЗУ в указанное место экрана.
 
 int s3402_get_coord(unsigned * x, unsigned * y);
+int s3402_get_id(void);
 /* заполнение прямоугольника на основном экране произвольным цветом
 */
 void
