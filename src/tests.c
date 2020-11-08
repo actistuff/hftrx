@@ -5206,6 +5206,51 @@ static const char s11 [] = { 0xD2, 0xE5, 0xF1, 0xF2, 0x20, 0xD1, 0xE5, 0xF2, 0xE
 static const char s12 [] = { 0xC7, 0xE0, 0xE3, 0xF0, 0xF3, 0xE7, 0xEA, 0xE0, 0x20, 0xE2, 0xED,
 		0xE5, 0xF8, 0xED, 0xE5, 0xE3, 0xEE, 0x20, 0xCF, 0xCE, 0x0, };	//Загрузка внешнего ПО
 
+/* Frame (86 bytes) */
+static const unsigned char pkt1 [86] = {
+	/* Ethernet header */
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x0c, /* ........ */
+	0x29, 0x15, 0x41, 0xc6, 0x08, 0x00,
+	/* IP header */
+	0x45, 0x00, /* ).A...E. */
+	0x00, 0x48, 0x74, 0x35, 0x40, 0x00, 0x40, 0x11, /* .Ht5@.@. */
+	0x6c, 0x02, 0xac, 0x0a, 0x01, 0x64, 0xac, 0xff, /* l....d.. */
+	0xff, 0xff,
+	/* UDP header */
+	0xe8, 0xe4, 0x08, 0x03, 0x00, 0x34, /* .......4 */
+	0x5a, 0xb3,
+	/* Packet data */
+	0x11, 0x5f, 0xa7, 0xad, 0xfd, 0x01, /* Z.._.... */
+	0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* ........ */
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* ........ */
+	0x00, 0x12, 0x41, 0x3b, 0x04, 0x00, 0x00, 0x00, /* ..A;.... */
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x2f, /* ......./ */
+	0x73, 0x65, 0x74, 0x75, 0x70, 0x00              /* setup. */
+};
+
+
+// Функции тестирования работы компорта по прерываниям
+void cat7_parsechar(uint_fast8_t c)				/* вызывается из обработчика прерываний */
+{
+
+}
+
+void cat7_rxoverflow(void)							/* вызывается из обработчика прерываний */
+{
+
+}
+
+void cat7_disconnect(void)							/* вызывается из обработчика прерываний */
+{
+
+}
+
+void cat7_sendchar(void * ctx)							/* вызывается из обработчика прерываний */
+{
+
+}
+
+
 /*                                                                      */
 /*      RANDOMBARS: Display random bars                                 */
 /*                                                                      */
@@ -5250,8 +5295,37 @@ static void AlignTest(void)
 //		display_at(0, y * 10, buff);
 //	}
 	display_flush();
+
+	hardware_uart7_initialize(1);
+	hardware_uart7_set_speed(115200);
+	hardware_uart7_enablerx(1);
+	hardware_uart7_enabletx(1);
 	for (;;)
-		;
+	{
+		static int pos = 0;
+		char c;
+		if (dbg_getchar(& c))
+		{
+			switch (c)
+			{
+			case '1':
+				// test send
+				pos = 0;
+				{
+					for (unsigned i = 0; i < ARRAY_SIZE(pkt1); ++ i)
+						while (hardware_uart7_putchar(pkt1 [i]) == 0)
+							;
+				}
+				break;
+			}
+		}
+		char rxc;
+		if (hardware_uart7_getchar(& rxc))
+		{
+			PRINTF("%02X%с", rxc, (pos + 1) == 16 ? '\n' : ' ');
+			pos = (pos + 1) % 16;
+		}
+	}
 
 
 }
