@@ -5214,6 +5214,7 @@ static void AlignTest(void)
 		buff [len] = '\0';
 		display_at(0, y * 10, buff);
 	}
+	display_flush();
 	for (;;)
 		;
 

@@ -4096,7 +4096,7 @@ void panel_initialize(void)
 
 	tscinit();
 	tscid();
-	for (;1;)
+	for (;0;)
 	{
 		tscprint();
 	}
