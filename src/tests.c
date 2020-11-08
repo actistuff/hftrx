@@ -5325,12 +5325,39 @@ static const unsigned char pkt1 [86] = {
 	0x73, 0x65, 0x74, 0x75, 0x70, 0x00              /* setup. */
 };
 
+static void byte_raw(uint_fast8_t ch)
+{
+	while (hardware_uart7_putchar(ch) == 0)
+		;
+}
+
+// https://ru.wikipedia.org/wiki/SLIP#%D0%A1%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B0_%D0%BA%D0%B0%D0%B4%D1%80%D0%BE%D0%B2
+
+static void byte_slip(uint_fast8_t ch)
+{
+	switch (ch)
+	{
+	case 0xDB:
+		byte_raw(0xDB);
+		byte_raw(0xDD);
+		break;
+	case 0xC0:
+		byte_raw(0xDB);
+		byte_raw(0xDC);
+		break;
+	default:
+		byte_raw(ch);
+		break;
+	}
+}
+
 // долбавить SLIP
 static void send_slip(const uint8_t * data, unsigned size)
 {
+	//byte_raw();	// SOP
 	for (unsigned i = 0; i < ARRAY_SIZE(pkt1); ++ i)
-		while (hardware_uart7_putchar(pkt1 [i]) == 0)
-			;
+		byte_slip(pkt1 [i]);
+	byte_raw(0xC0);	// EOP
 }
 
 // Функции тестирования работы компорта по прерываниям
@@ -5482,6 +5509,12 @@ restart:
 				BarTest();
 				goto restart;
 			}
+			if (insidebutton(0, 86, 25, 8, x, y))
+			{
+				// test send
+				send_slip(pkt1, ARRAY_SIZE(pkt1));
+				pos = 0;
+			}
 		}
 		{
 			uint_fast16_t year;
@@ -5508,17 +5541,19 @@ restart:
 				display_flush();
 			}
 		}
-		if (dbg_getchar(& c))
-		{
-			switch (c)
-			{
-			case '1':
-				// test send
-				send_slip(pkt1, ARRAY_SIZE(pkt1));
-				pos = 0;
-				break;
-			}
-		}
+
+//		if (dbg_getchar(& c))
+//		{
+//			switch (c)
+//			{
+//			case '1':
+//				// test send
+//				send_slip(pkt1, ARRAY_SIZE(pkt1));
+//				pos = 0;
+//				break;
+//			}
+//		}
+
 		char rxc;
 		if (hardware_uart7_getchar(& rxc))
 		{
