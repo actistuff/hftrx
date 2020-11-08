@@ -5354,10 +5354,11 @@ static void byte_slip(uint_fast8_t ch)
 // долбавить SLIP
 static void send_slip(const uint8_t * data, unsigned size)
 {
-	//byte_raw();	// SOP
-	for (unsigned i = 0; i < ARRAY_SIZE(pkt1); ++ i)
-		byte_slip(pkt1 [i]);
-	byte_raw(0xC0);	// EOP
+	byte_raw(0xC0);	// END
+	while (size --)
+		byte_slip(* data ++);
+	byte_raw(0xC0);	// END
+	byte_raw(0x03);	// noise byte
 }
 
 // Функции тестирования работы компорта по прерываниям
