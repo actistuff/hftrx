@@ -10605,6 +10605,20 @@ static void stm32mp1_pll_initialize(void)
 	(void) RCC->UART24CKSELR;
 #endif /* WITHUART2HW */
 
+#if 1//WITHUART7HW
+	// usart7
+	//0x0: pclk1 clock selected as kernel peripheral clock (default after reset)
+	//0x1: pll4_q_ck clock selected as kernel peripheral clock
+	//0x2: hsi_ker_ck clock selected as kernel peripheral clock
+	//0x3: csi_ker_ck clock selected as kernel peripheral clock
+	//0x4: hse_ker_ck clock selected as kernel peripheral clock
+	RCC->UART78CKSELR = (RCC->UART78CKSELR & ~ (RCC_UART78CKSELR_UART78SRC_Msk)) |
+		(0x02 << RCC_UART24CKSELR_UART24SRC_Pos) |	// hsi_ker_ck
+		//(0x00 << RCC_UART24CKSELR_UART24SRC_Pos) |	// pclk1
+		0;
+	(void) RCC->UART78CKSELR;
+#endif /* WITHUART7HW */
+
 #if WITHSPIHW
 	//0x0: pll4_p_ck clock selected as kernel peripheral clock (default after reset)
 	//0x1: pll3_q_ck clock selected as kernel peripheral clock
