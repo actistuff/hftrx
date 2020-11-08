@@ -5183,6 +5183,103 @@ static int local_randomgr(unsigned long num)
 
 }
 
+static void BarTest(void)
+{
+	PRINTF("BarTest\n");
+	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
+	board_update();
+
+	colmain_fillrect(colmain_fb_draw(), DIM_X, DIM_Y, 0, 0, DIM_X, DIM_Y, display_getbgcolor());
+
+	int forever = 0;
+	unsigned n = 50 * 20;
+	for (;forever || n --;)
+	{
+		const int r = local_randomgr(256);
+		const int g = local_randomgr(256);
+		const int b = local_randomgr(256);
+
+		const COLORMAIN_T color = TFTRGB(r, g, b);
+		int x = local_randomgr(DIM_X - 16);
+		int y = local_randomgr(DIM_Y);
+		int x2 = local_randomgr(DIM_X - 16);
+		int y2 = local_randomgr(DIM_Y);
+
+		display_solidbar(x, y, x2, y2, color);
+
+		display_flush();
+		local_delay_ms(20);
+
+	}
+}
+
+static  void
+GridTest(void)
+{
+	PRINTF("GridTest\n");
+	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
+	board_update();
+
+	int     xm, ym, xm4, ym4;
+	int xm1, ym1;
+	unsigned long col1, col20, col21, col22, col23, col3;
+	int     n, k;
+
+	col1 = TFTRGB(192,192,192);
+
+	col20 = TFTRGB(64,128,128);
+	col21 = TFTRGB(128,64,128);
+	col22 = TFTRGB(128,128,64);
+	col23 = TFTRGB(64,64,64);
+
+	col3 = TFTRGB(0,192,192);
+
+
+	xm = DIM_X - 1;
+	ym = DIM_Y - 1;
+	xm4 = xm / 4;
+	ym4 = ym / 4;
+	xm1 = xm / 40;
+	ym1 = ym / 40;
+
+	/* Filled rectangle - all screen. */
+	display_solidbar(0, 0, xm, ym, col1);
+
+	/* Filled rectangle at right-down corner. */
+	display_solidbar(xm4 * 3 + xm1, ym4 * 3 + ym1, xm4 * 4 - xm1, ym4 * 4 - ym1, col20);
+	/* Filled rectangle at right-upper corner. */
+	display_solidbar(xm4 * 3 + xm1, ym1, xm4 * 4 - xm1, ym4 - ym1, col21);
+	/* Filled rectangle at left - down corner. */
+	display_solidbar(xm1, ym4 * 3 + ym1, xm4 - xm1, ym4 * 4 - ym1, col22);
+	/* Filled rectangle at center. */
+	display_solidbar(xm4 + xm1, ym4 + ym1, xm4 * 3 - xm1, ym4 * 3 - ym1, col23);
+
+	for (k = 0; k < 16; ++ k)
+		for (n = 0; n < 16; ++ n)
+			display_solidbar(n * 18 + 1,
+				 k * 10 + 3,
+				 n * 18 + 16,
+				 k * 10 + 9,
+				 TFTRGB(n * 16, k * 16, 255 - (n * 8 + k * 8) )
+				 );
+
+	/* Interlase test.	*/
+	display_line(0,  0,  xm, 1,  col3);
+	display_line(0,  0,  xm, 3,  col3);
+	display_line(0,  0,  xm, 5,  col3);
+
+	/* diagonales test.	*/
+	display_line(xm, 0,  xm, ym, col3);
+	display_line(xm, ym, 0,  ym, col3);
+	display_line(0,  ym, 0,  0,  col3);
+	display_line(0,  0,  xm, ym, col3);
+	display_line(0,  ym, xm, 0,  col3);
+	display_flush();
+
+	local_delay_ms((300));
+
+}
+
 static const char s1 [] = { 0xD2, 0xC5, 0xD0, 0xCC, 0xC8, 0xCD, 0xC0, 0xCB, 0x20, 0x28, 0xC5, 0xC0, 0xCF, 0xC3,
 		0x2E, 0x34, 0x36, 0x36, 0x32, 0x32, 0x36, 0x2E, 0x30, 0x30, 0x37, 0x29, 0x0, };	// ТЕРМИНАЛ (ЕАПГ.466226.007)
 static const char s2 [] = { 0xC1, 0xE0, 0xE7, 0xEE, 0xE2, 0xFB, 0xE9, 0x20, 0xEF, 0xF0, 0xEE, 0xF6, 0xE5, 0xF1,
@@ -5250,20 +5347,50 @@ void cat7_sendchar(void * ctx)							/* вызывается из обработ
 
 }
 
+static int insidebutton(
+	uint_fast8_t xcell,
+	uint_fast8_t ycell,
+	uint_fast8_t wcell,
+	uint_fast8_t hcell,
+	uint_fast16_t xp,
+	uint_fast16_t yp
+	)
+{
+	uint_fast16_t x = GRID2X(xcell);
+	uint_fast16_t y = GRID2Y(ycell);
+	uint_fast16_t w = GRID2X(wcell);
+	uint_fast16_t h = GRID2Y(hcell);
+
+
+	return x <= xp &&
+			(x + w) > xp &&
+			y <= yp &&
+			(y + h) > yp;
+}
+
+
+
+
 static void hebutton(
-	uint_fast16_t x,
-	uint_fast16_t y,
-	uint_fast16_t w,
-	uint_fast16_t h,
+	uint_fast8_t xcell,
+	uint_fast8_t ycell,
+	uint_fast8_t wcell,
+	uint_fast8_t hcell,
 	const char * text,
 	unsigned state
 	)
 {
+	uint_fast16_t x = GRID2X(xcell);
+	uint_fast16_t y = GRID2Y(ycell);
+	uint_fast16_t w = GRID2X(wcell);
+	uint_fast16_t h = GRID2Y(hcell);
+
 	const COLORMAIN_T fg = COLORMAIN_BLACK;
-	const COLORMAIN_T bg = state ? COLORMAIN_GREEN : COLORMAIN_GREEN;
+	const COLORMAIN_T bg = state ? COLORMAIN_DARKGREEN : COLORMAIN_GREEN;
 	display_fillrect(x, y, w, h, bg);
-	//colmain_setcolors(fg, bg);
-	//display_at(x + 16, y + h / 2 - 8, text);
+
+	colmain_setcolors(fg, bg);
+	display_at(xcell + 2, ycell + 2, text);
 }
 
 /*                                                                      */
@@ -5272,37 +5399,41 @@ static void hebutton(
 
 static void AlignTest(void)
 {
-	enum { RADJ = 16 };
-	enum { W = 100, H = 100 };
+//	enum { RADJ = 16 };
+//	enum { W = 100, H = 100 };
 
 	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
 	board_update();
 
-	display_fillrect(0, 0, W, H, COLORMAIN_RED);
-	display_fillrect(DIM_X - W - RADJ, 0, W, H, COLORMAIN_GREEN);
-	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_BLUE);
-	display_fillrect(DIM_X - W - RADJ, DIM_Y - H, W, H, COLORMAIN_DARKGREEN);
+restart:
+	colmain_fillrect(colmain_fb_draw(), DIM_X, DIM_Y, 0, 0, DIM_X, DIM_Y, display_getbgcolor());
+
+//	display_fillrect(0, 0, W, H, COLORMAIN_RED);
+//	display_fillrect(DIM_X - W - RADJ, 0, W, H, COLORMAIN_GREEN);
+//	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_BLUE);
+//	display_fillrect(DIM_X - W - RADJ, DIM_Y - H, W, H, COLORMAIN_DARKGREEN);
 
 	colmain_setcolors(COLORMAIN_WHITE, COLORMAIN_BLACK);
-	display_at(0, 1 * 10, s1);
-	display_at(0, 2 * 10, s2);
-	display_at(0, 3 * 10, s3);
-	display_at(0, 4 * 10, s4);
-	display_at(0, 5 * 10, s5);
-	display_at(0, 6 * 10, s6);
-	display_at(0, 7 * 10, s7);
-	display_at(0, 8 * 10, s8);
-	display_at(0, 9 * 10, s9);
-	display_at(0, 10 * 10, s10);
+	display_at(0, 1 * 6, s1);
+	display_at(0, 2 * 6, s2);
+	display_at(0, 3 * 6, s3);
+	display_at(0, 4 * 6, s4);
+	display_at(0, 5 * 6, s5);
+	display_at(0, 6 * 6, s6);
+	display_at(0, 7 * 6, s7);
 
-	display_at(0, 11 * 10, s11);
-	display_at(0, 12 * 10, s12);
+//	display_at(0, 8 * 10, s8);
+//	display_at(0, 9 * 10, s9);
+//	display_at(0, 10 * 10, s10);
+//	display_at(0, 11 * 10, s11);
+//	display_at(0, 12 * 10, s12);
 //
-	hebutton(0, 300, 500, 40, s8, 0);
-	hebutton(0, 350, 500, 40, s9, 1);
-	hebutton(0, 400, 500, 40, s10, 0);
-	hebutton(0, 450, 500, 40, s11, 0);
-	hebutton(0, 500, 500, 40, s12, 0);
+
+	hebutton(0, 90, 30, 6, s8, 0);
+	hebutton(0, 100, 30, 6, s9, 0);
+	hebutton(0, 110, 30, 6, s10, 0);
+	hebutton(0, 120, 30, 6, s11, 0);
+	hebutton(0, 130, 30, 6, s12, 0);
 
 //	for (unsigned y = 0; y < 4; ++ y)
 //	{
@@ -5326,6 +5457,21 @@ static void AlignTest(void)
 	{
 		static int pos = 0;
 		char c;
+		unsigned x, y;
+		if (s3402_get_coord(& x, & y))
+		{
+			PRINTF("tsc: x=%u y=%u\n", x, y);
+			if (insidebutton(0, 110, 30, 6, x, y))
+			{
+//				// актиыная кнопка
+//				hebutton(0, 110, 30, 6, s10, 1);
+//				// ждем отпускания
+//				while (s3402_get_coord(& x, & y) != 0)
+//					;
+				BarTest();
+				goto restart;
+			}
+		}
 		if (dbg_getchar(& c))
 		{
 			switch (c)
@@ -5349,159 +5495,6 @@ static void AlignTest(void)
 		}
 	}
 
-
-}
-
-static void BarTest(void)
-{
-	//PRINTF("BarTest\n");
-//	unsigned w = setw(47);
-//	unsigned q = setq(720 * 3);
-	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
-	board_update();
-
-//	enum { W = 100, H = 100 };
-//	display_fillrect(0, 0, W, H, COLORMAIN_RED);
-//	display_fillrect(DIM_X - W, 0, W, H, COLORMAIN_GREEN);
-//	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_BLUE);
-//	display_fillrect(DIM_X - W, DIM_Y - H, W, H, COLORMAIN_WHITE);
-
-	int forever = 1;
-	unsigned n = 500;
-//	PRINTF("W=%u, Q=%u\n", setw(w), setq(q));
-	for (;forever || n --;)
-	{                    /* Until user enters a key...   */
-		const int r = local_randomgr(256);
-		const int g = local_randomgr(256);
-		const int b = local_randomgr(256);
-
-		const COLORMAIN_T color = TFTRGB(r, g, b);
-		int x = local_randomgr(DIM_X);
-		int y = local_randomgr(DIM_Y);
-		int x2 = local_randomgr(DIM_X);
-		int y2 = local_randomgr(DIM_Y);
-
-		display_solidbar(x, y, x2, y2, color);
-
-//		char s [128];
-//		local_snprintf_P(s, ARRAY_SIZE(s), "test W=%u,  Q=%u          ", w, q);
-//		colmain_setcolors(COLORMAIN_WHITE, COLORMAIN_BLACK);
-//		display_at(0, 5, s);
-
-		display_flush();
-		//local_delay_ms(50);
-//
-//		char c;
-//		if (dbg_getchar(& c))
-//		{
-//			switch (c)
-//			{
-//			case '6':
-//				w = w + 1;
-//				PRINTF("W=%u\n", setw(w));
-//				break;
-//			case '7':
-//				w = w + 100;
-//				PRINTF("W=%u\n", setw(w));
-//				break;
-//			case '5':
-//				if (w > 1)
-//				{
-//					w = w - 1;
-//					PRINTF("W=%u\n", setw(w));
-//				}
-//				break;
-//			case '4':
-//				if (w > 100)
-//				{
-//					w = w - 100;
-//					PRINTF("W=%u\n", setw(w));
-//				}
-//				break;
-//
-//			case '1':
-//				if (q > 1)
-//				{
-//					q = q - 1;
-//					PRINTF("Q=%u\n", setq(q));
-//				}
-//				break;
-//			case '2':
-//				q = q + 1;
-//				PRINTF("Q=%u\n", setq(q));
-//				break;
-//			}
-//		}
-
-	}
-
-	//getch();             /* Pause for user's response    */
-}
-
-static  void
-GridTest(void)
-{
-	PRINTF("GridTest\n");
-	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
-	board_update();
-
-	int     xm, ym, xm4, ym4;
-	int xm1, ym1;
-	unsigned long col1, col20, col21, col22, col23, col3;
-	int     n, k;
-
-	col1 = TFTRGB(192,192,192);
-
-	col20 = TFTRGB(64,128,128);
-	col21 = TFTRGB(128,64,128);
-	col22 = TFTRGB(128,128,64);
-	col23 = TFTRGB(64,64,64);
-
-	col3 = TFTRGB(0,192,192);
-
-
-	xm = DIM_X - 1;
-	ym = DIM_Y - 1;
-	xm4 = xm / 4;
-	ym4 = ym / 4;
-	xm1 = xm / 40;
-	ym1 = ym / 40;
-
-	/* Filled rectangle - all screen. */
-	display_solidbar(0, 0, xm, ym, col1);
-
-	/* Filled rectangle at right-down corner. */
-	display_solidbar(xm4 * 3 + xm1, ym4 * 3 + ym1, xm4 * 4 - xm1, ym4 * 4 - ym1, col20);
-	/* Filled rectangle at right-upper corner. */
-	display_solidbar(xm4 * 3 + xm1, ym1, xm4 * 4 - xm1, ym4 - ym1, col21);
-	/* Filled rectangle at left - down corner. */
-	display_solidbar(xm1, ym4 * 3 + ym1, xm4 - xm1, ym4 * 4 - ym1, col22);
-	/* Filled rectangle at center. */
-	display_solidbar(xm4 + xm1, ym4 + ym1, xm4 * 3 - xm1, ym4 * 3 - ym1, col23);
-
-	for (k = 0; k < 16; ++ k)
-		for (n = 0; n < 16; ++ n)
-			display_solidbar(n * 18 + 1,
-				 k * 10 + 3,
-				 n * 18 + 16,
-				 k * 10 + 9,
-				 TFTRGB(n * 16, k * 16, 255 - (n * 8 + k * 8) )
-				 );
-
-	/* Interlase test.	*/
-	display_line(0,  0,  xm, 1,  col3);
-	display_line(0,  0,  xm, 3,  col3);
-	display_line(0,  0,  xm, 5,  col3);
-
-	/* diagonales test.	*/
-	display_line(xm, 0,  xm, ym, col3);
-	display_line(xm, ym, 0,  ym, col3);
-	display_line(0,  ym, 0,  0,  col3);
-	display_line(0,  0,  xm, ym, col3);
-	display_line(0,  ym, xm, 0,  col3);
-	display_flush();
-
-	local_delay_ms((300));
 
 }
 

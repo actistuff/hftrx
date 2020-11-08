@@ -2701,7 +2701,7 @@ int tc358768_get_id(void) {
 
 #define TSC_I2C_ADDR (0x20 * 2)
 
-void tscinit(void)
+void s3402_init(void)
 {
 	const unsigned i2caddr = TSC_I2C_ADDR;
 
@@ -2713,7 +2713,7 @@ void tscinit(void)
     i2c_stop();
 }
 
-void tscid(void)
+void s3402_get_id(void)
 {
 	const unsigned i2caddr = TSC_I2C_ADDR;
 
@@ -2764,6 +2764,40 @@ void tscprint(void)
 		return;
 
 	PRINTF("tsc=%08lX %08lX\n", vz1, vz2);
+}
+
+// center: 		9E 01 79 01  00 03 05 02
+// left up: 	29 00 32 01  00 05 05 00
+// cright up:	29 02 BE 01  00 05 05 00
+// Left down: 	D0 00 26 01  00 05 05 04
+// Right down: 	E6 02 93 01  00 03 04 04
+
+int s3402_get_coord(unsigned * px, unsigned * py)
+{
+	const unsigned i2caddr = TSC_I2C_ADDR;
+
+
+	uint8_t v0, v1, v2, v3, v4, v5, v6, v7;
+
+	i2c_start(i2caddr | 0x00);
+	i2c_write_withrestart(0x06);	// Address=0x0006 is used to read coordinate.
+	i2c_start(i2caddr | 0x01);
+	i2c_read(& v0, I2C_READ_ACK_1);	// ||
+	i2c_read(& v1, I2C_READ_ACK);	// ||
+	i2c_read(& v2, I2C_READ_ACK);	// ||
+	i2c_read(& v3, I2C_READ_ACK);	// ||
+	i2c_read(& v4, I2C_READ_ACK);	// ||
+	i2c_read(& v5, I2C_READ_ACK);	// ||
+	i2c_read(& v6, I2C_READ_ACK);	// ||
+	i2c_read(& v7, I2C_READ_NACK);	// ||
+
+	if (v0 != 0)
+	{
+		* px = v1 + v2 * 256;
+		* py = v3 + v4 * 256;
+		return 1;
+	}
+	return 0;
 }
 
 
@@ -4094,8 +4128,8 @@ void panel_initialize(void)
 
 	PRINTF("display on\n");
 
-	tscinit();
-	tscid();
+	s3402_init();
+	s3402_get_id();
 	for (;0;)
 	{
 		tscprint();
