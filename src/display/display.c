@@ -722,7 +722,7 @@ bigfont_decode(uint_fast8_t c)
 uint_fast8_t
 smallfont_decode(uint_fast8_t c)
 {
-	if (c < ' ' || c > 0x7F)
+	if (c < ' ' || c > 0xFF)
 		return '$' - ' ';
 	return c - ' ';
 }

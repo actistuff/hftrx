@@ -5187,17 +5187,37 @@ static int local_randomgr(unsigned long num)
 /*                                                                      */
 /*      RANDOMBARS: Display random bars                                 */
 /*                                                                      */
-unsigned setw(unsigned w);
-unsigned setq(unsigned q);
-//unsigned getw2(void);
-//unsigned getq2(void);
+
 static void AlignTest(void)
 {
+	enum { RADJ = 16 };
 	enum { W = 100, H = 100 };
+
+	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
+	board_update();
+
 	display_fillrect(0, 0, W, H, COLORMAIN_RED);
-	display_fillrect(DIM_X - W, 0, W, H, COLORMAIN_RED);
+	display_fillrect(DIM_X - W - RADJ, 0, W, H, COLORMAIN_RED);
 	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_RED);
-	display_fillrect(DIM_X - W, DIM_Y - H, W, H, COLORMAIN_RED);
+	display_fillrect(DIM_X - W - RADJ, DIM_Y - H, W, H, COLORMAIN_RED);
+
+
+	for (unsigned y = 0; y < 6; ++ y)
+	{
+		unsigned len = 16;
+		char buff [len + 1];
+		for (unsigned i = 0; i < len; ++ i)
+		{
+			buff [i] = y * 16 + i + 0xA0;
+		}
+		colmain_setcolors(COLORMAIN_WHITE, COLORMAIN_BLACK);
+		buff [len] = '\0';
+		display_at(0, y * 10, buff);
+	}
+	for (;;)
+		;
+
+
 }
 
 static void BarTest(void)
@@ -6420,7 +6440,7 @@ void hightests(void)
 		}
 	}
 #endif
-#if 1 && LCDMODE_COLORED && ! DSTYLE_G_DUMMY
+#if 0 && LCDMODE_COLORED && ! DSTYLE_G_DUMMY
 	{
 		unsigned cnt;
 		display2_bgreset();
@@ -6431,6 +6451,11 @@ void hightests(void)
 			BarTest();
 			PRINTF("BarTest: %u\n", cnt);
 		}
+	}
+#endif
+#if 1 && LCDMODE_COLORED && ! DSTYLE_G_DUMMY
+	{
+		AlignTest();
 	}
 #endif
 #if 0 && WITHLTDCHW && LCDMODE_COLORED && ! DSTYLE_G_DUMMY
