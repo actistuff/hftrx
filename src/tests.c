@@ -5325,6 +5325,13 @@ static const unsigned char pkt1 [86] = {
 	0x73, 0x65, 0x74, 0x75, 0x70, 0x00              /* setup. */
 };
 
+// долбавить SLIP
+static void send_slip(const uint8_t * data, unsigned size)
+{
+	for (unsigned i = 0; i < ARRAY_SIZE(pkt1); ++ i)
+		while (hardware_uart7_putchar(pkt1 [i]) == 0)
+			;
+}
 
 // Функции тестирования работы компорта по прерываниям
 void cat7_parsechar(uint_fast8_t c)				/* вызывается из обработчика прерываний */
@@ -5404,8 +5411,11 @@ static void AlignTest(void)
 
 	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
 	board_update();
+	static unsigned sseconds;
 
 restart:
+
+	sseconds = UINT_MAX;;
 	colmain_fillrect(colmain_fb_draw(), DIM_X, DIM_Y, 0, 0, DIM_X, DIM_Y, display_getbgcolor());
 
 //	display_fillrect(0, 0, W, H, COLORMAIN_RED);
@@ -5429,11 +5439,11 @@ restart:
 //	display_at(0, 12 * 10, s12);
 //
 
-	hebutton(0, 90, 30, 5, s8, 0);
-	hebutton(0, 100, 30, 5, s9, 0);
-	hebutton(0, 110, 30, 5, s10, 0);
-	hebutton(0, 120, 30, 5, s11, 0);
-	hebutton(0, 130, 30, 5, s12, 0);
+	hebutton(0, 50, 25, 8, s8, 0);
+	hebutton(0, 62, 25, 8, s9, 0);
+	hebutton(0, 74, 25, 8, s10, 0);
+	hebutton(0, 86, 25, 8, s11, 0);
+	hebutton(0, 98, 25, 8, s12, 0);
 
 //	for (unsigned y = 0; y < 4; ++ y)
 //	{
@@ -5453,6 +5463,7 @@ restart:
 	hardware_uart7_set_speed(115200);
 	hardware_uart7_enablerx(1);
 	hardware_uart7_enabletx(1);
+
 	for (;;)
 	{
 		static int pos = 0;
@@ -5460,8 +5471,8 @@ restart:
 		unsigned x, y;
 		if (s3402_get_coord(& x, & y))
 		{
-			PRINTF("tsc: x=%u y=%u\n", x, y);
-			if (insidebutton(0, 110, 30, 5, x, y))
+			//PRINTF("tsc: x=%u y=%u\n", x, y);
+			if (insidebutton(0, 74, 25, 8, x, y))
 			{
 //				// актиыная кнопка
 //				hebutton(0, 110, 30, 6, s10, 1);
@@ -5472,18 +5483,39 @@ restart:
 				goto restart;
 			}
 		}
+		{
+			uint_fast16_t year;
+			uint_fast8_t month, day;
+			uint_fast8_t hour, minute, secounds;
+
+			board_rtc_getdatetime(& year, & month, & day, & hour, & minute, & secounds);
+
+			if (sseconds != secounds)
+			{
+				char s [128];
+				sseconds = secounds;
+				local_snprintf_P(
+					s, ARRAY_SIZE(s),
+					PSTR(" %02d-%02d-%04d %02d:%02d:%02d "),
+					day, month, year,
+					hour, minute, secounds);
+
+				//
+				colmain_setcolors(COLORMAIN_BLACK, COLORMAIN_WHITE);
+				// xcells total = 45
+				// ycells total = 256
+				display_at(27, 1 * 6, s);
+				display_flush();
+			}
+		}
 		if (dbg_getchar(& c))
 		{
 			switch (c)
 			{
 			case '1':
 				// test send
+				send_slip(pkt1, ARRAY_SIZE(pkt1));
 				pos = 0;
-				{
-					for (unsigned i = 0; i < ARRAY_SIZE(pkt1); ++ i)
-						while (hardware_uart7_putchar(pkt1 [i]) == 0)
-							;
-				}
 				break;
 			}
 		}
