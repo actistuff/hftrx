@@ -473,6 +473,49 @@ void RAMFUNC ltdc_horizontal_pixels(
 	//arm_hardware_flush((uintptr_t) tgr, sizeof (* tgr) * width);
 }
 
+static void fillx2(
+	PACKEDCOLORMAIN_T * tgr,		// target raster
+	unsigned col,
+	unsigned bitmask,
+	unsigned width
+	)
+{
+	while (width --)
+	{
+		const COLORMAIN_T color = (bitmask & 0x01) ? ltdc_fg : ltdc_bg;
+		tgr [col * 2 + 0] = color;
+		tgr [col * 2 + 1] = color;
+		bitmask >>= 1;
+		++ col;
+	}
+}
+
+// для случая когда горизонтальные пиксели в видеопямяти располагаются подряд
+void RAMFUNC ltdc_horizontal_x2_pixels(
+	PACKEDCOLORMAIN_T * tgr,		// target raster
+	const FLASHMEM uint8_t * raster,
+	uint_fast16_t width	// number of bits (start from LSB first byte in raster)
+	)
+{
+	uint_fast16_t col;
+	uint_fast16_t w = width;
+
+
+	for (col = 0; w >= 8; col += 8, w -= 1)
+	{
+		fillx2(tgr, col, * raster ++, 8);
+		//const FLASHMEM PACKEDCOLORMAIN_T * const pcl = (* byte2runmain) [* raster ++];
+		//memcpy(tgr + col, pcl, sizeof (* tgr) * 8);
+	}
+	if (w != 0)
+	{
+		fillx2(tgr, col, * raster ++, w);
+		//const FLASHMEM PACKEDCOLORMAIN_T * const pcl = (* byte2runmain) [* raster ++];
+		//memcpy(tgr + col, pcl, sizeof (* tgr) * w);
+	}
+	//arm_hardware_flush((uintptr_t) tgr, sizeof (* tgr) * width);
+}
+
 // Вызов этой функции только внутри display_wrdata_begin() и display_wrdata_end();
 // return new x
 static uint_fast16_t
@@ -491,6 +534,29 @@ ltdc_horizontal_put_char_small(uint_fast16_t x, uint_fast16_t y, char cc)
 		ltdc_horizontal_pixels(tgr, S1D13781_smallfont_LTDC [c] [cgrow], width);
 	}
 	return x + width;
+}
+
+// Вызов этой функции только внутри display_wrdata_begin() и display_wrdata_end();
+// return new x
+// Растр двойного размера
+static uint_fast16_t
+RAMFUNC_NONILINE
+ltdc_horizontal_x2_put_char_small(uint_fast16_t x, uint_fast16_t y, char cc)
+{
+	PACKEDCOLORMAIN_T * const buffer = colmain_fb_draw();
+	const uint_fast16_t dx = DIM_X;
+	const uint_fast16_t dy = DIM_Y;
+	const uint_fast8_t width = SMALLCHARW;
+	const uint_fast8_t c = smallfont_decode((unsigned char) cc);
+	uint_fast8_t cgrow;
+	for (cgrow = 0; cgrow < SMALLCHARH; ++ cgrow)
+	{
+		PACKEDCOLORMAIN_T * const tgr0 = colmain_mem_at(buffer, dx, dy, x, y + cgrow * 2 + 0);
+		ltdc_horizontal_x2_pixels(tgr0, S1D13781_smallfont_LTDC [c] [cgrow], width);
+		PACKEDCOLORMAIN_T * const tgr1 = colmain_mem_at(buffer, dx, dy, x, y + cgrow * 2) + 1;
+		ltdc_horizontal_x2_pixels(tgr1, S1D13781_smallfont_LTDC [c] [cgrow], width);
+	}
+	return x + width * 2;
 }
 
 // Вызов этой функции только внутри display_wrdatabig_begin() и display_wrdatabig_end();
@@ -663,6 +729,16 @@ uint_fast16_t display_put_char_small(uint_fast16_t x, uint_fast16_t y, uint_fast
 #endif /* LCDMODE_HORFILL */
 }
 
+uint_fast16_t display_x2_put_char_small(uint_fast16_t x, uint_fast16_t y, uint_fast8_t c, uint_fast8_t lowhalf)
+{
+#if LCDMODE_HORFILL
+	// для случая когда горизонтальные пиксели в видеопямяти располагаются подряд
+	return ltdc_horizontal_x2_put_char_small(x, y, c);
+#else /* LCDMODE_HORFILL */
+	return ltdc_vertical_x2_put_char_small(x, y, c);
+#endif /* LCDMODE_HORFILL */
+}
+
 void display_wrdata_end(void)
 {
 }
@@ -774,6 +850,20 @@ display_string(uint_fast8_t xcell, uint_fast8_t ycell, const char * s, uint_fast
 	display_wrdata_end();
 }
 
+// Используется при выводе на графический индикатор,
+static void
+display_x2_string(uint_fast8_t xcell, uint_fast8_t ycell, const char * s, uint_fast8_t lowhalf)
+{
+	savestring = s;
+	char c;
+
+	uint_fast16_t ypix;
+	uint_fast16_t xpix = display_wrdata_begin(xcell, ycell, & ypix);
+	while((c = * s ++) != '\0')
+		xpix = display_x2_put_char_small(xpix, ypix, c, lowhalf);
+	display_wrdata_end();
+}
+
 // Выдача строки из ОЗУ в указанное место экрана.
 void
 //NOINLINEAT
@@ -783,6 +873,20 @@ display_at(uint_fast8_t x, uint_fast8_t y, const char * s)
 	do
 	{
 		display_string(x, y + lowhalf, s, lowhalf);
+
+	} while (lowhalf --);
+}
+
+// Выдача строки из ОЗУ в указанное место экрана.
+// Все в двойном размере
+void
+//NOINLINEAT
+display_x2_at(uint_fast8_t x, uint_fast8_t y, const char * s)
+{
+	uint_fast8_t lowhalf = HALFCOUNT_SMALL - 1;
+	do
+	{
+		display_x2_string(x, y + lowhalf, s, lowhalf);
 
 	} while (lowhalf --);
 }

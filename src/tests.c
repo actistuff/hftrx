@@ -5250,6 +5250,21 @@ void cat7_sendchar(void * ctx)							/* вызывается из обработ
 
 }
 
+static void hebutton(
+	uint_fast16_t x,
+	uint_fast16_t y,
+	uint_fast16_t w,
+	uint_fast16_t h,
+	const char * text,
+	unsigned state
+	)
+{
+	const COLORMAIN_T fg = COLORMAIN_BLACK;
+	const COLORMAIN_T bg = state ? COLORMAIN_GREEN : COLORMAIN_GREEN;
+	display_fillrect(x, y, w, h, bg);
+	//colmain_setcolors(fg, bg);
+	//display_at(x + 16, y + h / 2 - 8, text);
+}
 
 /*                                                                      */
 /*      RANDOMBARS: Display random bars                                 */
@@ -5279,8 +5294,15 @@ static void AlignTest(void)
 	display_at(0, 8 * 10, s8);
 	display_at(0, 9 * 10, s9);
 	display_at(0, 10 * 10, s10);
+
 	display_at(0, 11 * 10, s11);
 	display_at(0, 12 * 10, s12);
+//
+	hebutton(0, 300, 500, 40, s8, 0);
+	hebutton(0, 350, 500, 40, s9, 1);
+	hebutton(0, 400, 500, 40, s10, 0);
+	hebutton(0, 450, 500, 40, s11, 0);
+	hebutton(0, 500, 500, 40, s12, 0);
 
 //	for (unsigned y = 0; y < 4; ++ y)
 //	{
