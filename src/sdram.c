@@ -3065,6 +3065,7 @@ static int stpmic1_get_version(unsigned long *version)
 {
 	int rc;
 	uint8_t read_val = 0xDD;
+	*version = (unsigned long)0xFFFF;
 
 	rc = stpmic1_register_read(VERSION_STATUS_REG, &read_val);
 	if (rc) {
