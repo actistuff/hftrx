@@ -2,7 +2,7 @@
    BY SG BITMAP FONT EDITOR
  */
 #define SMALLCHARH 15 /* Font height */
-#define SMALLCHARW 16 /* Font width */
+#define SMALLCHARW 12 /* Font width */
 static const FLASHMEM uint8_t S1D13781_smallfont_LTDC [][15][2] = 
 {
 	{
