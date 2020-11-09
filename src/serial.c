@@ -3387,7 +3387,7 @@ xxxx!;
 		const uint_fast32_t isr = UART7->ISR;
 
 		if (isr & USART_ISR_RXNE_RXFNE)
-			HARDWARE_UART7_ONRXCHAR(UART4->RDR);
+			HARDWARE_UART7_ONRXCHAR(UART7->RDR);
 		if (isr & USART_ISR_ORE)
 		{
 			UART7->ICR = USART_ICR_ORECF;

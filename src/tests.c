@@ -5334,53 +5334,64 @@ static const unsigned char pkt1 [86] = {
 
 static unsigned rxch = 0;
 static unsigned txch = 0;
+static unsigned rxerrchar = 0;
 
-static void byte_raw(uint_fast8_t ch)
+// Очереди символов для обмена с host
+enum { qSZ = 256 };
+static uint8_t queue [qSZ];
+static volatile unsigned qp, qg;
+//static SPINLOCK_t txqlock = SPINLOCK_INIT;
+
+// Передать символ в host
+static uint_fast8_t	qput(uint_fast8_t c)
 {
-	while (hardware_uart7_putchar(ch) == 0)
-		;
-	++ txch;
-}
-
-// https://ru.wikipedia.org/wiki/SLIP#%D0%A1%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B0_%D0%BA%D0%B0%D0%B4%D1%80%D0%BE%D0%B2
-
-static void byte_slip(uint_fast8_t ch)
-{
-	switch (ch)
+	unsigned qpt = qp;
+	const unsigned next = (qpt + 1) % qSZ;
+	if (next != qg)
 	{
-	case 0xDB:
-		byte_raw(0xDB);
-		byte_raw(0xDD);
-		break;
-	case 0xC0:
-		byte_raw(0xDB);
-		byte_raw(0xDC);
-		break;
-	default:
-		byte_raw(ch);
-		break;
+		queue [qpt] = c;
+		qp = next;
+		return 1;
 	}
+	return 0;
 }
 
-// долбавить SLIP
-static void send_slip(const uint8_t * data, unsigned size)
+// Получить символ в host
+static uint_fast8_t qget(uint_fast8_t * pc)
 {
-	byte_raw(0xC0);	// END
-	while (size --)
-		byte_slip(* data ++);
-	byte_raw(0xC0);	// END
-	byte_raw(0x03);	// noise byte
+	if (qp != qg)
+	{
+		* pc = queue [qg];
+		qg = (qg + 1) % qSZ;
+		return 1;
+	}
+	return 0;
+}
+
+// получить состояние очереди передачи
+static uint_fast8_t qempty(void)
+{
+	return qp == qg;
+}
+
+void cat7_sendraw(uint_fast8_t ch)
+{
+	system_disableIRQ();
+	if (qput(ch))
+		HARDWARE_CAT7_ENABLETX(1);
+	system_enableIRQ();
+	++ txch;
 }
 
 // Функции тестирования работы компорта по прерываниям
 void cat7_parsechar(uint_fast8_t c)				/* вызывается из обработчика прерываний */
 {
-
+	++ rxch;
 }
 
 void cat7_rxoverflow(void)							/* вызывается из обработчика прерываний */
 {
-
+	++ rxerrchar;
 }
 
 void cat7_disconnect(void)							/* вызывается из обработчика прерываний */
@@ -5390,7 +5401,53 @@ void cat7_disconnect(void)							/* вызывается из обработчи
 
 void cat7_sendchar(void * ctx)							/* вызывается из обработчика прерываний */
 {
+	uint_fast8_t c;
+	if (qget(& c))
+	{
+		HARDWARE_CAT7_TX(ctx, c);
+		if (qempty())
+			HARDWARE_CAT7_ENABLETX(0);
+	}
+	else
+	{
+		HARDWARE_CAT7_ENABLETX(0);
+	}
+}
 
+
+// https://ru.wikipedia.org/wiki/SLIP#%D0%A1%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B0_%D0%BA%D0%B0%D0%B4%D1%80%D0%BE%D0%B2
+
+static void slip_sendraw(uint_fast8_t ch)
+{
+	cat7_sendraw(ch);
+}
+
+static void byte_slip(uint_fast8_t ch)
+{
+	switch (ch)
+	{
+	case 0xDB:
+		slip_sendraw(0xDB);
+		slip_sendraw(0xDD);
+		break;
+	case 0xC0:
+		slip_sendraw(0xDB);
+		slip_sendraw(0xDC);
+		break;
+	default:
+		slip_sendraw(ch);
+		break;
+	}
+}
+
+// долбавить SLIP
+static void send_slip(const uint8_t * data, unsigned size)
+{
+	slip_sendraw(0xC0);	// END
+	while (size --)
+		byte_slip(* data ++);
+	slip_sendraw(0xC0);	// END
+	slip_sendraw(0x03);	// noise byte
 }
 
 /////////////////////
@@ -5503,7 +5560,7 @@ static void hebutton(
 
 	case DMSCREEN:
 		{
-			char s [128];
+			char s [40];
 
 			colpip_rect(colmain_fb_draw(), DIM_X, DIM_Y, x, y, x + w - 1, y + h - 1, COLORMAIN_WHITE, 0);
 			colmain_setcolors(COLORMAIN_GREEN, COLORMAIN_BLACK);
@@ -5530,7 +5587,7 @@ static void hebutton(
 
 			if (sseconds != secounds)
 			{
-				char s [128];
+				char s [40];
 				sseconds = secounds;
 				local_snprintf_P(
 					s, ARRAY_SIZE(s),
@@ -5590,7 +5647,7 @@ restart:
 //	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_BLUE);
 //	display_fillrect(DIM_X - W - RADJ, DIM_Y - H, W, H, COLORMAIN_DARKGREEN);
 
-	hardware_uart7_initialize(1);
+	hardware_uart7_initialize(0);
 	hardware_uart7_set_speed(115200);
 	hardware_uart7_enablerx(1);
 	hardware_uart7_enabletx(1);
@@ -5655,13 +5712,6 @@ restart:
 				}
 				break;
 			}
-		}
-		char rxc;
-		if (hardware_uart7_getchar(& rxc))
-		{
-			rxch ++;
-			//PRINTF("%02X%с", rxc, (pos + 1) == 16 ? '\n' : ' ');
-			//pos = (pos + 1) % 16;
 		}
 	}
 
