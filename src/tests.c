@@ -5382,21 +5382,75 @@ void cat7_sendchar(void * ctx)							/* вызывается из обработ
 
 }
 
+/////////////////////
+#include "src/display/fontmaps.h"
+
 static int tscok;
 
+enum
+{
+	DME_TSC,
+	DME_TIME,
+};
+
+typedef struct dmevent_tag
+{
+	unsigned type;
+	unsigned x, y;
+
+} dmevent_t;
+
+static int getevent(dmevent_t * p)
+{
+	uint_fast8_t hour, minute, secounds;
+	static unsigned sseconds = UINT_MAX;
+
+	if (tscok && s3402_get_coord(& p->x, & p->y))
+	{
+		p->type = DME_TSC;
+		return 1;
+	}
+	board_rtc_gettime(& hour, & minute, & secounds);
+	if (sseconds != secounds)
+	{
+		p->type = DME_TIME;
+		return 1;
+	}
+	return 0;
+}
+
+typedef struct demobutton_tag
+{
+	COLORMAIN_T	chcolor;	// check nark color
+	COLORMAIN_T	fg;
+	COLORMAIN_T	bg;
+	uint_fast8_t type;
+	uint_fast8_t x;
+	uint_fast8_t y;
+	uint_fast8_t w;
+	uint_fast8_t h;
+	const char * label;
+} demobutton_t;
+
+enum
+{
+	DMBUTTON,
+	DMLABEL,
+	DMSCREEN,
+	DMTIME,
+};
+
+// плпадает ли нажатие внутрь отображаемого элемента
 static int insidebutton(
-	uint_fast8_t xcell,
-	uint_fast8_t ycell,
-	uint_fast8_t wcell,
-	uint_fast8_t hcell,
+	const demobutton_t * db,
 	uint_fast16_t xp,
 	uint_fast16_t yp
 	)
 {
-	uint_fast16_t x = GRID2X(xcell);
-	uint_fast16_t y = GRID2Y(ycell);
-	uint_fast16_t w = GRID2X(wcell);
-	uint_fast16_t h = GRID2Y(hcell);
+	uint_fast16_t x = GRID2X(db->x);
+	uint_fast16_t y = GRID2Y(db->y);
+	uint_fast16_t w = GRID2X(db->w);
+	uint_fast16_t h = GRID2Y(db->h);
 
 	if (tscok == 0)
 		return 0;
@@ -5406,125 +5460,54 @@ static int insidebutton(
 			(y + h) > yp;
 }
 
+static int rxch = 0;
 
 
-
+// отрисовка кнопки или метки или всего что угодно
 static void hebutton(
-	uint_fast8_t xcell,
-	uint_fast8_t ycell,
-	uint_fast8_t wcell,
-	uint_fast8_t hcell,
-	const char * text,
-	unsigned state
+	const demobutton_t * db
 	)
 {
-	uint_fast16_t x = GRID2X(xcell);
-	uint_fast16_t y = GRID2Y(ycell);
-	uint_fast16_t w = GRID2X(wcell);
-	uint_fast16_t h = GRID2Y(hcell);
+	uint_fast16_t x = GRID2X(db->x);
+	uint_fast16_t y = GRID2Y(db->y);
+	uint_fast16_t w = GRID2X(db->w);
+	uint_fast16_t h = GRID2Y(db->h);
 
-	const COLORMAIN_T fg = COLORMAIN_BLACK;
-	const COLORMAIN_T bg = state ? COLORMAIN_WHITE : (tscok ? COLORMAIN_GRAY : COLORMAIN_DARKRED);
-	display_fillrect(x, y, w, h, bg);
-
-	colmain_setcolors(fg, bg);
-	display_at(xcell + 2, ycell + 2, text);
-}
-
-/*                                                                      */
-/*      RANDOMBARS: Display random bars                                 */
-/*                                                                      */
-
-static void AlignTest(void)
-{
-	tscok = s3402_get_id() == 0x01;
-//	enum { RADJ = 16 };
-//	enum { W = 100, H = 100 };
-
-	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
-	board_update();
-	static unsigned sseconds;
-
-restart:
-
-	sseconds = UINT_MAX;;
-	colmain_fillrect(colmain_fb_draw(), DIM_X, DIM_Y, 0, 0, DIM_X, DIM_Y, display_getbgcolor());
-
-//	display_fillrect(0, 0, W, H, COLORMAIN_RED);
-//	display_fillrect(DIM_X - W - RADJ, 0, W, H, COLORMAIN_GREEN);
-//	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_BLUE);
-//	display_fillrect(DIM_X - W - RADJ, DIM_Y - H, W, H, COLORMAIN_DARKGREEN);
-
-	colmain_setcolors(COLORMAIN_WHITE, COLORMAIN_BLACK);
-	display_at(0, 1 * 6, s1);
-	display_at(0, 2 * 6, s2);
-	display_at(0, 3 * 6, s3);
-	display_at(0, 4 * 6, s4);
-	display_at(0, 5 * 6, s5);
-	display_at(0, 6 * 6, s6);
-	display_at(0, 7 * 6, s7);
-
-//	display_at(0, 8 * 10, s8);
-//	display_at(0, 9 * 10, s9);
-//	display_at(0, 10 * 10, s10);
-//	display_at(0, 11 * 10, s11);
-//	display_at(0, 12 * 10, s12);
-//
-
-	hebutton(0, 50, 25, 8, s8, 0);
-	hebutton(0, 62, 25, 8, s9, 0);
-	hebutton(0, 74, 25, 8, s10, 0);
-	hebutton(0, 86, 25, 8, s11, 0);
-	hebutton(0, 98, 25, 8, s12, 0);
-
-//	for (unsigned y = 0; y < 4; ++ y)
-//	{
-//		unsigned len = 16;
-//		char buff [len + 1];
-//		for (unsigned i = 0; i < len; ++ i)
-//		{
-//			buff [i] = y * 16 + i + 0xC0;
-//		}
-//		colmain_setcolors(COLORMAIN_WHITE, COLORMAIN_BLACK);
-//		buff [len] = '\0';
-//		display_at(0, y * 10, buff);
-//	}
-	display_flush();
-
-	hardware_uart7_initialize(1);
-	hardware_uart7_set_speed(115200);
-	hardware_uart7_enablerx(1);
-	hardware_uart7_enabletx(1);
-
-	for (;;)
+	switch (db->type)
 	{
-		static int pos = 0;
-		char c;
-		unsigned x, y;
-		if (tscok && s3402_get_coord(& x, & y))
+	case DMLABEL:
 		{
-			//PRINTF("tsc: x=%u y=%u\n", x, y);
-			if (insidebutton(0, 74, 25, 8, x, y))
-			{
-//				// актиыная кнопка
-//				hebutton(0, 110, 30, 6, s10, 1);
-//				// ждем отпускания
-//				while (s3402_get_coord(& x, & y) != 0)
-//					;
-				BarTest();
-				goto restart;
-			}
-			if (insidebutton(0, 86, 25, 8, x, y))
-			{
-				// test send
-				send_slip(pkt1, ARRAY_SIZE(pkt1));
-				pos = 0;
-			}
+			display_fillrect(x, y, GRID2X(1), SMALLCHARH, db->chcolor);
+			colmain_setcolors(db->fg, db->bg);
+			display_at(db->x + 2, db->y, db->label);
 		}
+		break;
+
+	case DMBUTTON:
+		{
+			display_fillrect(x, y, w, h, db->bg);
+			colmain_setcolors(db->fg, db->bg);
+			display_at(db->x + 2, db->y + 2, db->label);
+		}
+		break;
+
+	case DMSCREEN:
+		{
+			char s [128];
+			local_snprintf_P(s, ARRAY_SIZE(s), "Rx=%-10u", rxch);
+			colpip_rect(colmain_fb_draw(), DIM_X, DIM_Y, x, y, x + w - 1, y + h - 1, COLORMAIN_WHITE, 0);
+			colmain_setcolors(COLORMAIN_GREEN, COLORMAIN_BLACK);
+			display_at(db->x + 1, db->y + 1 + ROWS2GRID(0), "Start.");
+			display_at(db->x + 1, db->y + 1 + ROWS2GRID(1), s);
+		}
+		break;
+
+	case DMTIME:
 		{
 			uint_fast16_t year;
 			uint_fast8_t month, day;
 			uint_fast8_t hour, minute, secounds;
+			static unsigned sseconds = UINT_MAX;
 
 			board_rtc_getdatetime(& year, & month, & day, & hour, & minute, & secounds);
 
@@ -5539,31 +5522,129 @@ restart:
 					hour, minute, secounds);
 
 				//
-				colmain_setcolors(COLORMAIN_BLACK, COLORMAIN_WHITE);
-				// xcells total = 45
-				// ycells total = 256
-				display_at(27, 1 * 6, s);
-				display_flush();
+				colmain_setcolors(db->fg, db->bg);
+				display_at(db->x + 2, db->y, s);
 			}
 		}
+		break;
+	}
+}
 
-//		if (dbg_getchar(& c))
-//		{
-//			switch (c)
-//			{
-//			case '1':
-//				// test send
-//				send_slip(pkt1, ARRAY_SIZE(pkt1));
-//				pos = 0;
-//				break;
-//			}
-//		}
+/*                                                                      */
+/*      RANDOMBARS: Display random bars                                 */
+/*                                                                      */
 
+static demobutton_t show [] =
+{
+	{	.type = DMLABEL, .x = 0, .y = 6, .w = 25, .h = 8, .label = s1, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_WHITE, .bg = COLORMAIN_BLACK			},	// ТЕРМИНАЛ (ЕАПГ.466226.007)
+	{	.type = DMTIME, .x = 26, .y = 6, .fg = COLORMAIN_BLACK, .bg = COLORMAIN_WHITE			},	// время
+	{	.type = DMLABEL, .x = 0, .y = 12, .w = 25, .h = 8, .label = s2, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_WHITE, .bg = COLORMAIN_BLACK		},	// * Базовый процессор : 1986ВЕ92У1 ;
+	{	.type = DMLABEL, .x = 0, .y = 18, .w = 25, .h = 8, .label = s3, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_WHITE, .bg = COLORMAIN_BLACK		},	// * Графический процессор : 32MP157 ;
+	{	.type = DMLABEL, .x = 0, .y = 24, .w = 25, .h = 8, .label = s4, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_WHITE, .bg = COLORMAIN_BLACK		},	// * ОЗУ : 512 Мбайт ;
+	{	.type = DMLABEL, .x = 0, .y = 30, .w = 25, .h = 8, .label = s5, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_WHITE, .bg = COLORMAIN_BLACK		},	// * ПЗУ : 16 Гбайт ;
+	{	.type = DMLABEL, .x = 0, .y = 36, .w = 25, .h = 8, .label = s6, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_WHITE, .bg = COLORMAIN_BLACK		},	// x Экран сенсорный : 1280 x 720
+	{	.type = DMLABEL, .x = 0, .y = 42, .w = 25, .h = 8, .label = s7, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_WHITE, .bg = COLORMAIN_BLACK		},	// * Сеть : 10 Мбит ;
+	{	.type = DMBUTTON, .x = 0, .y = 50, .w = 25, .h = 8, .label = s8, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_BLACK, .bg = COLORMAIN_WHITE 		},	//Тест ОЗУ
+	{	.type = DMBUTTON, .x = 0, .y = 62, .w = 25, .h = 8, .label = s9, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_BLACK, .bg = COLORMAIN_WHITE		},		//Тест ОЗУ
+	{	.type = DMBUTTON, .x = 0, .y = 74, .w = 25, .h = 8, .label = s10, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_BLACK, .bg = COLORMAIN_WHITE 		},		//Тест Экран
+	{	.type = DMBUTTON, .x = 0, .y = 86, .w = 25, .h = 8, .label = s11, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_BLACK, .bg = COLORMAIN_WHITE		},		//Тест Сети
+	{	.type = DMBUTTON, .x = 0, .y = 98, .w = 25, .h = 8, .label = s12, .chcolor = COLORMAIN_BLACK, .fg = COLORMAIN_BLACK, .bg = COLORMAIN_WHITE 		},		//Загрузка внешнего ПО
+	{	.type = DMSCREEN, .x = 0, .y = 110, .w = 43, .h = 140 	},
+};
+
+static COLORMAIN_T getchpassed(int state)
+{
+	return state ? COLORMAIN_GREEN : COLORMAIN_RED;
+}
+
+static void AlignTest(void)
+{
+	tscok = s3402_get_id() == 0x01;
+
+	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
+	board_update();
+
+restart:
+
+	colmain_fillrect(colmain_fb_draw(), DIM_X, DIM_Y, 0, 0, DIM_X, DIM_Y, display_getbgcolor());
+
+//	display_fillrect(0, 0, W, H, COLORMAIN_RED);
+//	display_fillrect(DIM_X - W - RADJ, 0, W, H, COLORMAIN_GREEN);
+//	display_fillrect(0, DIM_Y - H, W, H, COLORMAIN_BLUE);
+//	display_fillrect(DIM_X - W - RADJ, DIM_Y - H, W, H, COLORMAIN_DARKGREEN);
+
+	hardware_uart7_initialize(1);
+	hardware_uart7_set_speed(115200);
+	hardware_uart7_enablerx(1);
+	hardware_uart7_enabletx(1);
+	enum
+	{
+		STINIT,
+		STDUMMY,
+		ST0,
+		ST1,
+		ST2,
+		ST3,
+		ST4,
+		ST5,
+		STDONE
+	};
+	int state = STINIT;
+	int refresh = 0;
+	for (;;)
+	{
+		show [2].chcolor = getchpassed(state >= ST0);
+		show [3].chcolor = getchpassed(state >= ST1);
+		show [4].chcolor = getchpassed(state >= ST2);
+		show [5].chcolor = getchpassed(state >= ST3);
+		show [6].chcolor = getchpassed(tscok && state >= ST4);
+		show [7].chcolor = getchpassed(state >= ST5);
+		if (refresh)
+		{
+			for (unsigned i = 0; i < ARRAY_SIZE(show); ++ i)
+			{
+				hebutton(show + i);
+			}
+			display_flush();
+			refresh = 0;
+		}
+
+		dmevent_t ev;
+		if (getevent(& ev))
+		{
+			switch (ev.type)
+			{
+			case DME_TIME:
+				if (state < STDONE)
+					++ state;
+				refresh = 1;
+				break;
+
+			case DME_TSC:
+				if (insidebutton(show + 10, ev.x, ev.y))
+				{
+	//				// актиыная кнопка
+	//				hebutton(0, 110, 30, 6, s10, 1);
+	//				// ждем отпускания
+	//				while (s3402_get_coord(& x, & y) != 0)
+	//					;
+					BarTest();
+					goto restart;
+				}
+				if (insidebutton(show + 11, ev.x, ev.y))
+				{
+					// test send
+					send_slip(pkt1, ARRAY_SIZE(pkt1));
+				}
+				break;
+			}
+		}
 		char rxc;
 		if (hardware_uart7_getchar(& rxc))
 		{
-			PRINTF("%02X%с", rxc, (pos + 1) == 16 ? '\n' : ' ');
-			pos = (pos + 1) % 16;
+			rxch ++;
+			//PRINTF("%02X%с", rxc, (pos + 1) == 16 ? '\n' : ' ');
+			//pos = (pos + 1) % 16;
 		}
 	}
 
