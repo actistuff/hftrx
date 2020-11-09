@@ -5509,13 +5509,13 @@ static void hebutton(
 			colmain_setcolors(COLORMAIN_GREEN, COLORMAIN_BLACK);
 			const uint_fast8_t cellx = db->x + 1;
 			const uint_fast8_t celly = db->y + 1;
-			enum { LINEC = 6 };
+			enum { LINEC = 5 };
 			/* полезная информация */
 			display_at(cellx, celly + LINEC * 0, "Start.");
 			local_snprintf_P(s, ARRAY_SIZE(s), "Tx=%-10u", txch);
 			display_at(cellx, celly + LINEC * 1, s);
 			local_snprintf_P(s, ARRAY_SIZE(s), "Rx=%-10u", rxch);
-			display_at(cellx, celly + LINEC * 2, s2);
+			display_at(cellx, celly + LINEC * 2, s);
 		}
 		break;
 
@@ -5772,8 +5772,8 @@ static uint_fast32_t any_rd_reg_32bits(uint_fast8_t i2caddr, uint_fast8_t regist
 {
 	uint8_t v0, v1, v2, v3;
 
-	i2c_start(i2caddr | 0x00);
-	i2c_write_withrestart(register_id);
+	//i2c_start(i2caddr | 0x00);
+	//i2c_write_withrestart(register_id);
 	i2c_start(i2caddr | 0x01);
 	i2c_read(& v0, I2C_READ_ACK_1);	// ||
 	i2c_read(& v1, I2C_READ_ACK);	// ||
