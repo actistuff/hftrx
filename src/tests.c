@@ -5376,11 +5376,15 @@ static uint_fast8_t qempty(void)
 
 void cat7_sendraw(uint_fast8_t ch)
 {
+	unsigned sent = 0;
 	system_disableIRQ();
 	if (qput(ch))
+	{
 		HARDWARE_CAT7_ENABLETX(1);
+		sent = 1;
+	}
 	system_enableIRQ();
-	++ txch;
+	txch += sent;
 }
 
 // Функции тестирования работы компорта по прерываниям
