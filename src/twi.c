@@ -1427,24 +1427,21 @@ static void i2c_dly(void)
 //SCL_IN = SDA_IN = 0;
 void i2c_initialize(void)
 {
+	uint_fast8_t i;
+
 	// программирование выводов, управляющих I2C
 	TWISOFT_INITIALIZE();
 
-
 #if 0
-	uint_fast8_t i;
 	// release I2C bus
 	CLR_TWD();
-	for (i = 0; i < 24; ++ i)
+	i2c_dly();
+	for (i = 0; i < 9; ++ i)
 	{
 		CLR_TWCK();
+		i2c_dly();
 		SET_TWCK();
-	}
-	SET_TWD();
-	for (i = 0; i < 24; ++ i)
-	{
-		CLR_TWCK();
-		SET_TWCK();
+		i2c_dly();
 	}
 
 #endif
@@ -1457,6 +1454,20 @@ void i2c_initialize(void)
 #ifdef TWISOFT2_INITIALIZE
 
 	TWISOFT2_INITIALIZE();
+
+#if 0
+	// release I2C bus
+	CLR2_TWD();
+	i2c_dly();
+	for (i = 0; i < 9; ++ i)
+	{
+		CLR2_TWCK();
+		i2c_dly();
+		SET2_TWCK();
+		i2c_dly();
+	}
+
+#endif
 
 	SET2_TWD();
 	i2c_dly();

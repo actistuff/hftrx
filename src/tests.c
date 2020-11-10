@@ -5416,15 +5416,39 @@ static void byte_slip(uint_fast8_t ch)
 
 static uint_fast8_t slip_parse_esc;
 static uint_fast16_t slip_parse_cnt;
-static uint8_t slip_parse_buff [1600];
+static uint_fast16_t slip_valid_cnt;
+static uint8_t slip_parse_buff [256];
+#define SLIPDEBUG 1
+static uint_fast8_t slip_peek(unsigned offset)
+{
+#if SLIPDEBUG
+	return slip_parse_buff [(offset + slip_parse_cnt) % ARRAY_SIZE(slip_parse_buff)];
+#else /* SLIPDEBUG */
+	return slip_parse_buff [offset];
+#endif /* SLIPDEBUG */
+}
+
+static unsigned slip_count(void)
+{
+#if SLIPDEBUG
+	return ARRAY_SIZE(slip_parse_buff);
+#else /* SLIPDEBUG */
+	return slip_valid_cnt;
+#endif /* SLIPDEBUG */
+}
 
 static void slip_parse(uint_fast8_t ch)
 {
+#if SLIPDEBUG
+	slip_parse_buff [slip_parse_cnt] = ch;
+	slip_parse_cnt = (slip_parse_cnt + 1) % ARRAY_SIZE(slip_parse_buff);
+#else /* SLIPDEBUG */
 	switch (ch)
 	{
 	case 0xC0:
 		if (slip_parse_cnt != 0)
 		{
+			slip_valid_cnt = slip_parse_cnt;
 			++ rxpkt;
 		}
 		slip_parse_esc = 0;
@@ -5452,6 +5476,7 @@ static void slip_parse(uint_fast8_t ch)
 		}
 		break;
 	}
+#endif /* SLIPDEBUG */
 }
 
 // долбавить SLIP
@@ -5639,7 +5664,7 @@ static void hebutton(
 
 	case DMSCREEN:
 		{
-			char s [40];
+			char s [48];
 
 			colpip_rect(colmain_fb_draw(), DIM_X, DIM_Y, x, y, x + w - 1, y + h - 1, COLORMAIN_WHITE, 0);
 			colmain_setcolors(COLORMAIN_GREEN, COLORMAIN_BLACK);
@@ -5653,6 +5678,29 @@ static void hebutton(
 			display_at(cellx, celly + LINEC * 1, s);
 			local_snprintf_P(s, ARRAY_SIZE(s), "Rxpkt=%-10u", rxpkt);
 			display_at(cellx, celly + LINEC * 2, s);
+
+			for (unsigned row = 0; row < 16; ++ row)
+			{
+				for (unsigned col = 0; col < 16; ++ col)
+				{
+					if ((row * 16 + col) >= slip_count())
+					{
+						s [col * 3 + 0] = ' ';
+						s [col * 3 + 1] = ' ';
+						s [col * 3 + 2] = ' ';
+					}
+					else
+					{
+						static const char hex [] = "0123456789ABCDEF";
+						unsigned val = slip_peek(row * 16 + col);
+						s [col * 3 + 0] = hex [(val >> 4) & 0x0F];
+						s [col * 3 + 1] = hex [(val >> 4) & 0x0F];
+						s [col * 3 + 2] = ' ';
+					}
+				}
+				s [15 * 3 + 2] = '\0';
+				display_at(cellx, celly + LINEC * (3 + row), s);
+			}
 		}
 		break;
 
