@@ -5416,6 +5416,7 @@ static void byte_slip(uint_fast8_t ch)
 
 static uint_fast8_t slip_parse_esc;
 static uint_fast16_t slip_parse_cnt;
+static uint8_t slip_parse_buff [1600];
 
 static void slip_parse(uint_fast8_t ch)
 {
@@ -5445,6 +5446,10 @@ static void slip_parse(uint_fast8_t ch)
 			}
 		}
 		// Use ch for packet data
+		if (slip_parse_cnt < ARRAY_SIZE(slip_parse_buff))
+		{
+			slip_parse_buff [slip_parse_cnt ++] = ch;
+		}
 		break;
 	}
 }
@@ -5511,12 +5516,10 @@ typedef struct dmevent_tag
 
 static unsigned volatile tmpressed;
 static unsigned volatile pressflag;
-static unsigned volatile ticks;
 
 static void
 tsc_spool(void * ctx)
 {
-	++ ticks;
 	{
 		unsigned t = tmpressed;
 		if (t != 0)
@@ -5644,14 +5647,12 @@ static void hebutton(
 			const uint_fast8_t celly = db->y + 1;
 			enum { LINEC = 5 };
 			/* полезная информация */
-			local_snprintf_P(s, ARRAY_SIZE(s), "Ticks=%-10u", ticks);
-			display_at(cellx, celly + LINEC * 0, s);
 			local_snprintf_P(s, ARRAY_SIZE(s), "Tx=%-10u", txch);
-			display_at(cellx, celly + LINEC * 1, s);
+			display_at(cellx, celly + LINEC * 0, s);
 			local_snprintf_P(s, ARRAY_SIZE(s), "Rx=%-10u", rxch);
-			display_at(cellx, celly + LINEC * 2, s);
+			display_at(cellx, celly + LINEC * 1, s);
 			local_snprintf_P(s, ARRAY_SIZE(s), "Rxpkt=%-10u", rxpkt);
-			display_at(cellx, celly + LINEC * 3, s);
+			display_at(cellx, celly + LINEC * 2, s);
 		}
 		break;
 
