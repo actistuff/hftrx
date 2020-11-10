@@ -5333,6 +5333,7 @@ static const unsigned char pkt1 [86] = {
 };
 
 static unsigned rxch = 0;
+static unsigned rxpkt = 0;
 static unsigned txch = 0;
 static unsigned rxerrchar = 0;
 
@@ -5387,9 +5388,81 @@ void cat7_sendraw(uint_fast8_t ch)
 	txch += sent;
 }
 
+
+// https://ru.wikipedia.org/wiki/SLIP
+
+static void slip_sendraw(uint_fast8_t ch)
+{
+	cat7_sendraw(ch);
+}
+
+static void byte_slip(uint_fast8_t ch)
+{
+	switch (ch)
+	{
+	case 0xDB:
+		slip_sendraw(0xDB);
+		slip_sendraw(0xDD);
+		break;
+	case 0xC0:
+		slip_sendraw(0xDB);
+		slip_sendraw(0xDC);
+		break;
+	default:
+		slip_sendraw(ch);
+		break;
+	}
+}
+
+static uint_fast8_t slip_parse_esc;
+static uint_fast16_t slip_parse_cnt;
+
+static void slip_parse(uint_fast8_t ch)
+{
+	switch (ch)
+	{
+	case 0xC0:
+		if (slip_parse_cnt != 0)
+		{
+			++ rxpkt;
+		}
+		slip_parse_esc = 0;
+		slip_parse_cnt = 0;
+		break;
+
+	default:
+		if (slip_parse_esc != 0)
+		{
+			slip_parse_esc = 0;
+			switch (ch)
+			{
+			case 0xDD:
+				ch = 0xDB;
+				break;
+			case 0xDC:
+				ch = 0xC0;
+				break;
+			}
+		}
+		// Use ch for packet data
+		break;
+	}
+}
+
+// долбавить SLIP
+static void send_slip(const uint8_t * data, unsigned size)
+{
+	slip_sendraw(0xC0);	// END
+	while (size --)
+		byte_slip(* data ++);
+	slip_sendraw(0xC0);	// END
+	slip_sendraw(0x03);	// noise byte
+}
+
 // Функции тестирования работы компорта по прерываниям
 void cat7_parsechar(uint_fast8_t c)				/* вызывается из обработчика прерываний */
 {
+	slip_parse(c);
 	++ rxch;
 }
 
@@ -5418,42 +5491,6 @@ void cat7_sendchar(void * ctx)							/* вызывается из обработ
 	}
 }
 
-
-// https://ru.wikipedia.org/wiki/SLIP#%D0%A1%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B0_%D0%BA%D0%B0%D0%B4%D1%80%D0%BE%D0%B2
-
-static void slip_sendraw(uint_fast8_t ch)
-{
-	cat7_sendraw(ch);
-}
-
-static void byte_slip(uint_fast8_t ch)
-{
-	switch (ch)
-	{
-	case 0xDB:
-		slip_sendraw(0xDB);
-		slip_sendraw(0xDD);
-		break;
-	case 0xC0:
-		slip_sendraw(0xDB);
-		slip_sendraw(0xDC);
-		break;
-	default:
-		slip_sendraw(ch);
-		break;
-	}
-}
-
-// долбавить SLIP
-static void send_slip(const uint8_t * data, unsigned size)
-{
-	slip_sendraw(0xC0);	// END
-	while (size --)
-		byte_slip(* data ++);
-	slip_sendraw(0xC0);	// END
-	slip_sendraw(0x03);	// noise byte
-}
-
 /////////////////////
 #include "src/display/fontmaps.h"
 
@@ -5474,10 +5511,12 @@ typedef struct dmevent_tag
 
 static unsigned volatile tmpressed;
 static unsigned volatile pressflag;
+static unsigned volatile ticks;
 
 static void
 tsc_spool(void * ctx)
 {
+	++ ticks;
 	{
 		unsigned t = tmpressed;
 		if (t != 0)
@@ -5493,7 +5532,7 @@ static int getevent(dmevent_t * p)
 	static unsigned sseconds = UINT_MAX;
 
 	static unsigned lastx, lasty;
-	if (tscok && s3402_get_coord(& lastx, & lastx))
+	if (tscok && s3402_get_coord(& lastx, & lasty))
 	{
 		system_disableIRQ();
 		tmpressed = NTICKS(100);
@@ -5605,11 +5644,14 @@ static void hebutton(
 			const uint_fast8_t celly = db->y + 1;
 			enum { LINEC = 5 };
 			/* полезная информация */
-			display_at(cellx, celly + LINEC * 0, "Start.");
+			local_snprintf_P(s, ARRAY_SIZE(s), "Ticks=%-10u", ticks);
+			display_at(cellx, celly + LINEC * 0, s);
 			local_snprintf_P(s, ARRAY_SIZE(s), "Tx=%-10u", txch);
 			display_at(cellx, celly + LINEC * 1, s);
 			local_snprintf_P(s, ARRAY_SIZE(s), "Rx=%-10u", rxch);
 			display_at(cellx, celly + LINEC * 2, s);
+			local_snprintf_P(s, ARRAY_SIZE(s), "Rxpkt=%-10u", rxpkt);
+			display_at(cellx, celly + LINEC * 3, s);
 		}
 		break;
 
@@ -5708,7 +5750,7 @@ restart:
 	{
 		show [2].chcolor = getchpassed(state >= ST0);
 		show [3].chcolor = getchpassed(state >= ST1);
-		show [4].chcolor = getchpassed(state >= ST2);
+		show [4].chcolor = getchpassed(arm_hardware_sdram_ok() && state >= ST2);
 		show [5].chcolor = getchpassed(state >= ST3);
 		show [6].chcolor = getchpassed(tscok && state >= ST4);
 		show [7].chcolor = getchpassed(state >= ST5);

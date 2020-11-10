@@ -16,6 +16,9 @@
 
 #if WITHSDRAMHW
 
+
+static uint_fast8_t sdramok = 1;
+
 #include "sdram.h"
 
 void sdram_test_pattern(uint_fast32_t addr, uint_fast16_t buffer_size, uint_fast16_t pattern)
@@ -985,10 +988,12 @@ mmio_clrsetbits_32(uintptr_t addr, uint32_t cmask, uint32_t smask)
 
 static void panic(void)
 {
+	sdramok = 0;
 	PRINTF("sdram: panic.\n");
 	return;
 	for (;;)
 		;
+
 }
 
 // DDR clock in Hz
@@ -4037,20 +4042,20 @@ void FLASHMEMINITFUNC arm_hardware_sdram_initialize(void)
 	if (uret != 0U) {
 		ERROR("DDR data bus test: can't access memory @ 0x%x\n",
 		      uret);
-		//panic();
+		panic();
 	}
 	uret = ddr_test_addr_bus();
 	if (uret != 0U) {
 		ERROR("DDR addr bus test: can't access memory @ 0x%x\n",
 		      uret);
-		//panic();
+		panic();
 	}
 
 	uret = ddr_check_size();
 	if (uret < config.info.size) {
 		ERROR("DDR size: 0x%x does not match DT config: 0x%x\n",
 		      uret, config.info.size);
-		//panic();
+		panic();
 	}
 	INFO("Memory size = 0x%x (%d MB)\n", uret, uret / (1024U * 1024U));
 
@@ -4116,6 +4121,12 @@ void FLASHMEMINITFUNC arm_hardware_sdram_initialize(void)
 	PRINTF("arm_hardware_sdram_initialize done\n");
 
 
+}
+
+// SDRAM test results (0 - error, 1 - OK)
+uint_fast8_t arm_hardware_sdram_ok(void)
+{
+	return sdramok;
 }
 
 #endif
