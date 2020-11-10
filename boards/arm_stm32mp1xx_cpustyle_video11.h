@@ -35,9 +35,10 @@
 
 #if WITHDEBUG
 	#define WITHUART4HW	1	/* PD5, PD6 Используется периферийный контроллер последовательного порта #2 */
-	#define WITHUART7HW	1	/* RX PB3, TX PB4 Используется периферийный контроллер последовательного порта #2 */
-	#define WITHUARTFIFO	1	/* испольование FIFO */
 #endif /* WITHDEBUG */
+
+#define WITHUART7HW	1	/* RX PB3, TX PB4 Используется периферийный контроллер последовательного порта #2 */
+#define WITHUARTFIFO	1	/* испольование FIFO */
 
 //#define WITHCAT_USART1		1
 #define WITHDEBUG_USART4	1

@@ -5472,16 +5472,49 @@ typedef struct dmevent_tag
 
 } dmevent_t;
 
+static unsigned volatile tmpressed;
+static unsigned volatile pressflag;
+
+static void
+tsc_spool(void * ctx)
+{
+	{
+		unsigned t = tmpressed;
+		if (t != 0)
+			tmpressed = t - 1;
+	}
+}
+
+static ticker_t tscticker;
+
 static int getevent(dmevent_t * p)
 {
 	uint_fast8_t hour, minute, secounds;
 	static unsigned sseconds = UINT_MAX;
 
-	if (tscok && s3402_get_coord(& p->x, & p->y))
+	static unsigned lastx, lasty;
+	if (tscok && s3402_get_coord(& lastx, & lastx))
 	{
-		p->type = DME_TSC;
-		return 1;
+		system_disableIRQ();
+		tmpressed = NTICKS(100);
+		pressflag = 1;
+		system_enableIRQ();
 	}
+	else
+	{
+		system_disableIRQ();
+		if (pressflag != 0 && tmpressed == 0)
+		{
+			pressflag = 0;
+			p->type = DME_TSC;
+			p->x = lastx;
+			p->y = lasty;
+			system_enableIRQ();
+			return 1;
+		}
+		system_enableIRQ();
+	}
+
 	board_rtc_gettime(& hour, & minute, & secounds);
 	if (sseconds != secounds)
 	{
@@ -5638,6 +5671,8 @@ static COLORMAIN_T getchpassed(int state)
 static void AlignTest(void)
 {
 	tscok = s3402_get_id() == 0x01;
+
+	ticker_initialize(& tscticker, 1, tsc_spool, NULL);	// вызывается с частотой TICKS_FREQUENCY (например, 200 Гц) с запрещенными прерываниями.
 
 	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
 	board_update();
