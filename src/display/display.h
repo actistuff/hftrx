@@ -967,6 +967,15 @@ COLORPIP_T getshadedcolor(
 #define WMINUSFLAG 0x40	// отображается пробел или минус в зависимости от знака значения
 #define WWIDTHFLAG 0x3F	// оставшиеся биты под ширину поля
 
+void display_vtty_initialize(void);
+int display_vtty_putchar(char ch);
+// копирование растра в видеобуфер отображения
+void display_vtty_show(
+	uint_fast16_t x,
+	uint_fast16_t y
+	);
+void display_vtty_printf(const char * format, ...);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

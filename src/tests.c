@@ -5664,6 +5664,17 @@ static void hebutton(
 
 	case DMSCREEN:
 		{
+			colpip_rect(colmain_fb_draw(), DIM_X, DIM_Y, x, y, x + w - 1, y + h - 1, COLORMAIN_WHITE, 0);
+			colmain_setcolors(COLORMAIN_GREEN, COLORMAIN_BLACK);
+			const uint_fast8_t cellx = db->x + 1;
+			const uint_fast8_t celly = db->y + 1;
+
+			display_vtty_show(GRID2Y(cellx), GRID2Y(celly));
+		}
+		break;
+
+	case DMSCREEN + 9999:
+		{
 			char s [48];
 
 			colpip_rect(colmain_fb_draw(), DIM_X, DIM_Y, x, y, x + w - 1, y + h - 1, COLORMAIN_WHITE, 0);
@@ -5764,6 +5775,7 @@ static void AlignTest(void)
 	tscok = s3402_get_id() == 0x01;
 
 	ticker_initialize(& tscticker, 1, tsc_spool, NULL);	// вызывается с частотой TICKS_FREQUENCY (например, 200 Гц) с запрещенными прерываниями.
+	display_vtty_initialize();
 
 	board_set_bglight(0, WITHLCDBACKLIGHTMAX);	// включить подсветку
 	board_update();
@@ -5822,6 +5834,8 @@ restart:
 				if (state < STDONE)
 					++ state;
 				refresh = 1;
+				static int e;
+				display_vtty_printf("tick #%d\n", e++);
 				break;
 
 			case DME_TSC:
